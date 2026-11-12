@@ -244,7 +244,9 @@ body[data-agy-theme][data-newux-theme="onyx"] .surface-composer:focus-within > .
   box-shadow: var(--ag-composer-card-focus-shadow, 0 6px 20px -2px rgba(60, 20, 15, 0.07), 0 2px 6px -1px rgba(0, 0, 0, 0.04)) !important;
 }
 
-/* 鼠标工字光标 (I-beam) 物理防隐形增强：白底卡片下锁定清晰可见的高对比纯黑工字指针 */
+/* 输入框鼠标指针与文字插入光标色彩校正：
+ * 恢复系统标准默认粗细与大小的工字指针，通过绑定明确的 color-scheme 实现：
+ * 浅色/白色界面下 100% 保持标准黑色，深色/黑夜界面下 100% 保持标准白色，点选文字精准不遮挡。 */
 :is(#antigravity\.agentSidePanelInputBox, [id="antigravity.agentSidePanelInputBox"], .surface-composer) :is(
   .surface-composer-card,
   [role="combobox"],
@@ -254,9 +256,9 @@ body[data-agy-theme][data-newux-theme="onyx"] .surface-composer:focus-within > .
   .ProseMirror,
   p.pointer-events-none
 ):not(button):not(button *) {
-  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='24' viewBox='0 0 16 24'%3E%3Cpath d='M4.5 3h7M8 3v18M4.5 21h7' stroke='%23ffffff' stroke-width='3' stroke-linecap='square' fill='none'/%3E%3Cpath d='M4.5 3h7M8 3v18M4.5 21h7' stroke='%23000000' stroke-width='1.5' stroke-linecap='square' fill='none'/%3E%3C/svg%3E") 8 12, text !important;
-  caret-color: #000000 !important;
+  cursor: text !important;
   color-scheme: light !important;
+  caret-color: #000000 !important;
 }
 
 /* 输入框顶部工具栏（排除 .surface-composer-card 本身）、底部按钮与发送/取消按钮 */
@@ -728,7 +730,7 @@ body[data-agy-theme][data-newux-theme="onyx"].dark .agy-sidebar-row[data-selecte
   color: #FFFFFF !important;
 }
 
-/* 黑夜模式兼容：黑夜下自动平滑过渡为纯白高对比工字光标（带暗色描边）与白色输入指示线 */
+/* 黑夜模式兼容：黑夜下自动无缝平滑切换为标准默认白色工字光标与白色插入指示线 */
 :is(html[data-ag-theme-mode="dark"] body, body.dark) :is(#antigravity\.agentSidePanelInputBox, [id="antigravity.agentSidePanelInputBox"], .surface-composer) :is(
   .surface-composer-card,
   [role="combobox"],
@@ -738,9 +740,9 @@ body[data-agy-theme][data-newux-theme="onyx"].dark .agy-sidebar-row[data-selecte
   .ProseMirror,
   p.pointer-events-none
 ):not(button):not(button *) {
-  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='24' viewBox='0 0 16 24'%3E%3Cpath d='M4.5 3h7M8 3v18M4.5 21h7' stroke='%23000000' stroke-width='3' stroke-linecap='square' fill='none'/%3E%3Cpath d='M4.5 3h7M8 3v18M4.5 21h7' stroke='%23ffffff' stroke-width='1.5' stroke-linecap='square' fill='none'/%3E%3C/svg%3E") 8 12, text !important;
-  caret-color: #FFFFFF !important;
+  cursor: text !important;
   color-scheme: dark !important;
+  caret-color: #FFFFFF !important;
 }
 
 :is(html[data-ag-theme-mode="dark"] body, body.dark) :is([data-testid="conversation-row-sidebar"], .agy-sidebar-row):not([data-selected="true"]):hover span.truncate {

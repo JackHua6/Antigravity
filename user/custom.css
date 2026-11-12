@@ -7,7 +7,8 @@
  * ============================================================================ */
 
 /* 修复输入框在 Windows DWM 下鼠标工字光标 (I-beam) 偶然发白隐形的系统渲染 Bug：
- * 采用高对比纯黑工字指针（带极细防反光白色微轮廓）与强制纯黑输入光标，确保在白底卡片中 100% 绝对清晰可见。 */
+ * 恢复系统标准默认粗细与大小的工字光标，通过绑定明确的 color-scheme 实现：
+ * 浅色/白色界面下 100% 保持标准黑色，深色/黑夜界面下 100% 保持标准白色，点选文字精准不遮挡。 */
 :is(#antigravity\.agentSidePanelInputBox, [id="antigravity.agentSidePanelInputBox"], .surface-composer) :is(
   .surface-composer-card,
   [role="combobox"],
@@ -17,12 +18,12 @@
   .ProseMirror,
   p.pointer-events-none
 ):not(button):not(button *) {
-  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='24' viewBox='0 0 16 24'%3E%3Cpath d='M4.5 3h7M8 3v18M4.5 21h7' stroke='%23ffffff' stroke-width='3' stroke-linecap='square' fill='none'/%3E%3Cpath d='M4.5 3h7M8 3v18M4.5 21h7' stroke='%23000000' stroke-width='1.5' stroke-linecap='square' fill='none'/%3E%3C/svg%3E") 8 12, text !important;
-  caret-color: #000000 !important;
+  cursor: text !important;
   color-scheme: light !important;
+  caret-color: #000000 !important;
 }
 
-/* 黑夜模式兼容：黑夜下自动平滑过渡为纯白工字光标（带黑色暗轮廓）与白色输入指示线 */
+/* 黑夜模式兼容：黑夜下自动无缝平滑切换为标准默认白色工字光标与白色插入指示线 */
 :is(html[data-ag-theme-mode="dark"] body, body.dark) :is(#antigravity\.agentSidePanelInputBox, [id="antigravity.agentSidePanelInputBox"], .surface-composer) :is(
   .surface-composer-card,
   [role="combobox"],
@@ -32,7 +33,7 @@
   .ProseMirror,
   p.pointer-events-none
 ):not(button):not(button *) {
-  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='24' viewBox='0 0 16 24'%3E%3Cpath d='M4.5 3h7M8 3v18M4.5 21h7' stroke='%23000000' stroke-width='3' stroke-linecap='square' fill='none'/%3E%3Cpath d='M4.5 3h7M8 3v18M4.5 21h7' stroke='%23ffffff' stroke-width='1.5' stroke-linecap='square' fill='none'/%3E%3C/svg%3E") 8 12, text !important;
-  caret-color: #FFFFFF !important;
+  cursor: text !important;
   color-scheme: dark !important;
+  caret-color: #FFFFFF !important;
 }
