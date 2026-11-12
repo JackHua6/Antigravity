@@ -1,0 +1,67 @@
+# JackHua's Antigravity 汉化、字体与主题增强版 (v5.2.0 · 完美适配 Antigravity 2.31.0+)
+
+[![Version](https://img.shields.io/badge/version-5.2.0-7A1F1A.svg)](https://github.com/JackHua6/Antigravity)
+[![Antigravity](https://img.shields.io/badge/Antigravity-2.31.0%2B-D97757.svg)](https://github.com/JackHua6/Antigravity)
+[![Node](https://img.shields.io/badge/node-%3E%3D22.0.0%20(22.13%2B%20Full)-339933.svg)](https://nodejs.org/)
+[![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-lightgrey.svg)](https://github.com/JackHua6/Antigravity)
+
+> **本项目基于 [Anarcadia/chuanban-antigravity-theme-patch](https://github.com/Anarcadia/chuanban-antigravity-theme-patch) 进行二次开发与深度增强。**  
+> 针对原版在日常使用中的两大核心硬伤（**“客户端退出重启后变回英文”** 与 **“Windows 白底输入框鼠标工字光标发白隐形”**），独创了双启动联合守护机制与矢量双层光标防隐形引擎，提供开箱即用、无感常驻的母语级 Antigravity 体验。
+
+---
+
+## 🌟 JackHua 增强版三大核心突破（v5.2.0 专属优化）
+
+| 核心增强功能 | 原版常见痛点 | 本版（v5.2.0）解决方案 |
+| :--- | :--- | :--- |
+| **1. 客户端退出重启自动保持中文** | 原版依赖常开命令行或容易随客户端退出被 Windows 作业树强杀；每次完全退出或关机重启后变回英文，需要用户反复敲命令或手动重新汉化。 | **独创 Windows 快捷方式“双启动联合守护”架构**：安装时自动感知并劫持修复桌面（含 OneDrive 桌面）与开始菜单快捷方式（保留官方原生高清图标）。每次正常双击图标打开 Antigravity，后台自动在 0 秒内静默核验并拉起守护进程，**实现日常退出重启、关机开机 100% 自动保持中文**！ |
+| **2. 白底输入框鼠标工字型 (I-beam) 矢量防隐形** | Windows DWM 硬件加速与 Chromium 反色机制冲突：白底输入卡片下鼠标工字光标经常被错误渲染成“纯白色”，在白底框内移动完全看不清光标位置。 | **独创双层物理矢量光标（SVG Cursor）引擎**：通过 1.5px 纯黑主体加 0.5px 极细防反光白色微轮廓，并锁定 `caret-color: #000000` 与 `color-scheme: light`，彻底根除指针发白隐形；当切换为黑夜模式时，光标自动平滑过渡为纯白高对比工字型。 |
+| **3. 智能唤醒指令与离线 `重新汉化.bat`** | 官方大版本更新覆盖核心文件后，用户往往需要去翻看文档输入复杂安装参数。 | **多层自愈容灾体系**：根目录预置一键免配置批处理 `重新汉化.bat`，双击 2 秒内恢复；同时在 `SKILL.md` 中绑定高频短语，在客户端对话框直接发「重新汉化」或「修复汉化」，Agent 即自动静默完成修复。 |
+
+---
+
+## 🔗 核心资源链接
+
+| 端点名称 | 链接地址 | 定位与包含内容 |
+| :--- | :--- | :--- |
+| **1. 本项目 GitHub 代码库** | [**JackHua6/Antigravity**](https://github.com/JackHua6/Antigravity) | **增强版成品代码与安装器**。包含已修复光标与重启守护的 `core/`、改装层 `user/`、一键安装器 `install.mjs` 及 Agent 专属 `SKILL.md`。 |
+| **2. Google Drive 字体包（必下）** | [**Google Drive 官方共享文件夹**](https://drive.google.com/drive/folders/1NX92SgVUqtSjWg6bt6sIJXy-cn7J_boC) | 内置 **Anthropic 官方原版字体族**（`Anthropic Sans` / `Anthropic Serif` / `Anthropic Mono`）与 **更纱黑体超集**（`Sarasa-SuperTTC.ttc`）。 |
+| **3. 上游原版项目致敬** | [**Anarcadia/chuanban-antigravity-theme-patch**](https://github.com/Anarcadia/chuanban-antigravity-theme-patch) | 感谢船板原作者提供的优秀黄金内核基础与配色灵感。 |
+
+---
+
+## 🖼️ 实机样式演示
+
+### 1. 三栏工作台：高对比暖纸主题 + 古朴暗红蜡封输入框 + 同行实时指标胶囊 + 黑色工字型光标
+![三栏对话与工件阅读视图](assets/preview-workspace-chat-and-artifact.png)
+
+### 2. 新建对话首页：全界面深度汉化 + 聚焦浮现淡雅暗红蜡封外框
+![新建对话首页视图](assets/preview-home-new-conversation.png)
+
+---
+
+## 🚀 极简部署与日常使用指南
+
+### 一、新用户一键安装（推荐直接发给 AI Agent）
+1. **下载安装字体**：从 [**Google Drive 全套资源包**](https://drive.google.com/drive/folders/1NX92SgVUqtSjWg6bt6sIJXy-cn7J_boC) 下载字体解压安装，并确保本机已安装 **Node.js `>= 22.0.0`**（推荐 `>= 22.13.0`）。
+2. **复制发给你的 AI Agent（Antigravity / Claude Code / Codex / Cursor 等）**：
+
+> **💬 复制发给 Agent（一键安装）**：  
+> 请帮我克隆 `https://github.com/JackHua6/Antigravity.git`，严格按照仓库内的 `SKILL.md` 执行 `node install.mjs doctor` 和 `node install.mjs install`，帮我一键部署好该增强版汉化补丁并完成快捷方式守卫与光标增强配置。
+
+### 二、日常使用体验
+- **日常关闭与重新打开**：无需任何额外操作，直接双击桌面原版 Antigravity 图标启动，**100% 自动保持中文**。
+- **未来版本升级容灾**：若客户端大版本更新覆盖了内部配置，双击本地目录的 `重新汉化.bat`，或在客户端对话框中对 Agent 发送 **“重新汉化”**，即可 2 秒自动恢复。
+
+---
+
+## 🕒 版本演进简史
+
+- **2026-11-12（v5.2.0 · JackHua 增强版首发）**：
+  1. **首创 Windows 快捷方式双启动联合守护（`LaunchAntigravity.vbs`）**：彻底解决客户端退出重启变回英文的体验缺陷，安装时自动感知并绑定桌面与开始菜单快捷方式，开机/重启客户端 100% 自动保持中文；
+  2. **首创 Chromium DWM 白底工字型光标 (I-beam) 矢量防隐形引擎**：通过纯黑实体加 0.5px 防反光微轮廓物理光标，彻底根治白底输入框中鼠标光标发白隐形的问题，昼夜双模式无缝自适应；
+  3. **新增一键离线修复脚本 `重新汉化.bat` 与全场景智能短指令触发**。
+- **2026-11-11（v5.1.4 原版）**：
+  修复实时指标胶囊运行态同行稳定化与 `flex-col` 越界溢出。
+- **2026-11-11（v5.1.3 原版）**：
+  适配 Antigravity 2.31.0 Worktree、900条汉化词典、SQLite O(1) 增量遥测与 WeakMap 隔离缓存。
