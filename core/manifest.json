@@ -1,6 +1,6 @@
 {
   "name": "jackhua-antigravity-theme-patch",
-  "version": "5.2.0",
+  "version": "5.2.2",
   "minNodeVersion": "22.0.0",
   "fullMetricsNodeVersion": "22.13.0",
   "distribution": {
@@ -10,12 +10,12 @@
   },
   "files": {
     "daemon.mjs": {
-      "sha256": "8b18a34357de898cf225d87bc865678c13782ad64febaf6de15b13ccb2723716",
-      "bytes": 42177
+      "sha256": "fda61c9db8187d4ad4d274173f0b83bd6f5289047e035537ed4f79c5052cc638",
+      "bytes": 43445
     },
     "runtime.js": {
-      "sha256": "f95e71be25a2344cf335b888fad08a42e19220686af679bfa0c7590e38602f65",
-      "bytes": 70179
+      "sha256": "093ed9c15240a165bd24a3209f2cbf9205e76acf865c90f04375e3595e6e86cf",
+      "bytes": 70193
     },
     "theme.css": {
       "sha256": "938e47ecabdfca73b6c7e4fc8ba7ecbb0e4163bac478c61557cfb1e951ebecc1",

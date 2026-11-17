@@ -1,19 +1,20 @@
 ---
 name: jackhua-antigravity-theme-patch
-description: 华哥优化的 Antigravity 主题、字体与深度汉化增强版（v5.2.1 · 独创 Windows 客户端退出重启自动保持中文 + 白底输入框标准高对比工字型光标防隐形 + 990条深度汉化全覆盖远程控制与新版特性 + 昼夜双模式独立解耦）。当用户提到“重新汉化”、“汉化失效”、“升级后汉化”、“版本更新重新汉化”、“修复汉化”、“重装汉化”、“安装汉化”、“汉化”、“安装 Antigravity 主题”、“定制 Antigravity 界面样式或汉化词条”时触发。激活后直接在项目目录执行 node install.mjs install 并 verify 验收，秒级恢复全界面汉化与主题。
+description: 华哥优化的 Antigravity 主题、字体与深度汉化增强版（v5.2.2 · 独创 Windows 客户端退出重启自动保持中文 + 白底输入框标准高对比工字型光标防隐形 + 990条深度汉化全覆盖远程控制与新版特性 + 512K/动态上下文上限自适应 + 昼夜双模式独立解耦）。当用户提到“重新汉化”、“汉化失效”、“升级后汉化”、“版本更新重新汉化”、“修复汉化”、“重装汉化”、“安装汉化”、“汉化”、“安装 Antigravity 主题”、“定制 Antigravity 界面样式或汉化词条”时触发。激活后直接在项目目录执行 node install.mjs install 并 verify 验收，秒级恢复全界面汉化与主题。
 ---
 
-# JackHua's Antigravity 主题、字体与深度汉化增强版 (v5.2.1 · 昼夜双模式解耦 & Antigravity 2.31.0+ 全量适配)
+# JackHua's Antigravity 主题、字体与深度汉化增强版 (v5.2.2 · 昼夜双模式解耦 & Antigravity 2.32.1+ 全量适配)
 
 > **前置概括（致用户与执行端 AI Agent）**：
-> - **本项目基底**：基于 [Anarcadia/chuanban-antigravity-theme-patch](https://github.com/Anarcadia/chuanban-antigravity-theme-patch) 进行二次开发与深度增强，补齐了原版缺失的 **Windows 客户端退出重启自动保持中文** 与 **白底输入框鼠标工字光标 (I-beam) 标准防隐形** 两大核心体验能力，并全面补齐官方近期新功能的深度汉化。
+> - **本项目基底**：基于 [Anarcadia/chuanban-antigravity-theme-patch](https://github.com/Anarcadia/chuanban-antigravity-theme-patch) 进行二次开发与深度增强，补齐了原版缺失的 **Windows 客户端退出重启自动保持中文** 与 **白底输入框鼠标工字光标 (I-beam) 标准防隐形** 两大核心体验能力，并全面补齐官方近期新功能的深度汉化与上下文水位线动态识别。
 > - **设计目的**：以纯运行时 CDP 非侵入式注入，为 Google Antigravity 提供昼夜双模式物理隔离、990条全界面深度汉化与实时模型指标，并实现 Windows 平台日常无感常驻：
 >   - **白天模式（`body:not(.dark)`）**：提供三套 Anthropic 暖纸护眼配色预设（默认高对比暖白）与输入框「古朴暗红蜡封」三态交互；
->   - **黑夜模式（`body.dark`）**：当点击客户端「深色 / Dark」按钮切换时，**100% 保持四层字体排版与 UI 几何形状不变**，同时 `0ms` 还原 Antigravity `2.31.0` 官方 `onyx` Default Dark 碳黑配色方案；
+>   - **黑夜模式（`body.dark`）**：当点击客户端「深色 / Dark」按钮切换时，**100% 保持四层字体排版与 UI 几何形状不变**，同时 `0ms` 还原 Antigravity `2.31.0+` 官方 `onyx` Default Dark 碳黑配色方案；
 >   - **光标防隐形与色彩校正（v5.2.0+ 优化特性）**：恢复系统标准默认粗细与大小的工字指针（1px 纤细主干），通过上下文色彩方案强制声明，白天锁定纯黑、黑夜自动切换纯白，点选字与字之间精准绝不遮挡；
 >   - **双启动联合守护（v5.2.0+ 独创新特性）**：安装时自动感知并绑定桌面与开始菜单快捷方式（`LaunchAntigravity.vbs`），客户端退出重启、电脑关机开机 **100% 自动保持中文**，告别单次生效！
->   - **新功能深度汉化覆盖（v5.2.1 补全特性）**：全量补齐官方近期新增的远程控制 (Remote Control)、设备名称 (Device Name)、复制链接、适用于 Linux 的 Windows 子系统 (WSL)、内置浏览器安全警示与代码审查步骤控制等近百条高频界面词条，扩充至 990+ 条。
->   - **全局共享能力**：四层中西文精密排版、990 条全界面无死角汉化及基于 SQLite `O(1)` 增量游标的同行实时会话指标胶囊（`tok/s · TTFT · Ctx 256k 水位 · Out`）。
+>   - **新功能深度汉化覆盖（v5.2.1+ 补全特性）**：全量补齐官方近期新增的远程控制 (Remote Control)、设备名称 (Device Name)、复制链接、适用于 Linux 的 Windows 子系统 (WSL)、内置浏览器安全警示与代码审查步骤控制等近百条高频界面词条，扩充至 990+ 条。
+>   - **上下文水位线自适应（v5.2.2 优化特性）**：彻底修复原先写死 `256k` 导致 Gemini 4 Hydrogen 等 `512K` 上下文窗口展示超 `100%` 的 Bug；`core/daemon.mjs` 自动从 SQLite `gen_metadata` 中读取每个模型真实的 `max_context_tokens`（支持 `512k` / `256k` / `160k` / `840k` 等自动跟随与 `512k` 默认兜底）。
+>   - **全局共享能力**：四层中西文精密排版、990 条全界面无死角汉化及基于 SQLite `O(1)` 增量游标的同行实时会话指标胶囊（`tok/s · TTFT · Ctx 512k/动态水位 · Out`）。
 
 ---
 

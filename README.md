@@ -1,23 +1,24 @@
-# JackHua's Antigravity 汉化、字体与主题增强版 (v5.2.1 · 完美适配 Antigravity 2.31.0+)
+# JackHua's Antigravity 汉化、字体与主题增强版 (v5.2.2 · 完美适配 Antigravity 2.32.1+)
 
-[![Version](https://img.shields.io/badge/version-5.2.1-7A1F1A.svg)](https://github.com/JackHua6/Antigravity)
-[![Antigravity](https://img.shields.io/badge/Antigravity-2.31.0%2B-D97757.svg)](https://github.com/JackHua6/Antigravity)
+[![Version](https://img.shields.io/badge/version-5.2.2-7A1F1A.svg)](https://github.com/JackHua6/Antigravity)
+[![Antigravity](https://img.shields.io/badge/Antigravity-2.32.1%2B-D97757.svg)](https://github.com/JackHua6/Antigravity)
 [![Node](https://img.shields.io/badge/node-%3E%3D22.0.0%20(22.13%2B%20Full)-339933.svg)](https://nodejs.org/)
 [![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-lightgrey.svg)](https://github.com/JackHua6/Antigravity)
 
 > **本项目基于 [Anarcadia/chuanban-antigravity-theme-patch](https://github.com/Anarcadia/chuanban-antigravity-theme-patch) 进行二次开发与深度增强。**  
-> 针对原版在日常使用中的两大核心硬伤（**“客户端退出重启后变回英文”** 与 **“Windows 白底输入框鼠标工字光标发白隐形”**），独创了双启动联合守护机制与矢量双层光标防隐形引擎，并针对官方最新版本补全了近百条缺失词条（**990+ 条深度汉化**，全量覆盖远程控制、设备管理、WSL 连接等新功能），提供开箱即用、无感常驻的母语级 Antigravity 体验。
+> 针对原版在日常使用中的三大核心痛点（**“客户端退出重启后变回英文”**、**“Windows 白底输入框鼠标工字光标发白隐形”** 与 **“静态 256K 上下文水位线导致 512K 模型显示超 100%”**），独创了双启动联合守护机制、标准色彩自适应工字光标与动态模型上下文水位线识别，并补全了近百条新版词条（**990+ 条深度汉化**），提供开箱即用、无感常驻的母语级 Antigravity 体验。
 
 ---
 
-## 🌟 JackHua 增强版四大核心突破（v5.2.1 专属优化）
+## 🌟 JackHua 增强版五大核心突破（v5.2.2 专属优化）
 
-| 核心增强功能 | 原版常见痛点 | 本版（v5.2.1）解决方案 |
+| 核心增强功能 | 原版常见痛点 | 本版（v5.2.2）解决方案 |
 | :--- | :--- | :--- |
 | **1. 客户端退出重启自动保持中文** | 原版依赖常开命令行或容易随客户端退出被 Windows 作业树强杀；每次完全退出或关机重启后变回英文，需要用户反复敲命令或手动重新汉化。 | **独创 Windows 快捷方式“双启动联合守护”架构**：安装时自动感知并劫持修复桌面（含 OneDrive 桌面）与开始菜单快捷方式（保留官方原生高清图标）。每次正常双击图标打开 Antigravity，后台自动在 0 秒内静默核验并拉起守护进程，**实现日常退出重启、关机开机 100% 自动保持中文**！ |
 | **2. 白底输入框鼠标工字型 (I-beam) 标准防隐形** | Windows DWM 硬件加速与 Chromium 反色机制冲突：白底输入卡片下鼠标工字光标经常被错误渲染成“纯白色”，在白底框内移动完全看不清光标位置。 | **系统标准默认粗细 + 强制 `color-scheme` 色彩自适应**：彻底去除过粗过宽的自定义图形遮挡，采用 100% 系统标准默认大小与细度的工字指针（1px 纤细主干），并通过精准声明 `color-scheme` 与 `caret-color` 锁定白天纯黑、黑夜纯白，点选字与字之间精准绝不遮挡。 |
-| **3. 新版全功能深度汉化补全（990+ 词条）** | 官方近期版本新推功能（如远程控制、二维码扫码连接、WSL 切换、浏览器内嵌安全拦截等）在旧版补丁中大量出现英文残留。 | **全量补齐官方近期新版特性词条**：全面覆盖「远程控制 (Remote Control)」、「设备名称 (Device Name)」、「复制链接/扫码在远程控制中打开」、「适用于 Linux 的 Windows 子系统 (WSL)」、「内置浏览器内嵌限制与私密连接警示」等近百条高频界面词汇，总词条扩充至 990+ 条！ |
-| **4. 智能唤醒指令与离线 `重新汉化.bat`** | 官方大版本更新覆盖核心文件后，用户往往需要去翻看文档输入复杂安装参数。 | **多层自愈容灾体系**：根目录预置一键免配置批处理 `重新汉化.bat`，双击 2 秒内恢复；同时在 `SKILL.md` 中绑定高频短语，在客户端对话框直接发「重新汉化」或「修复汉化」，Agent 即自动静默完成修复。 |
+| **3. 512K / 多模型上下文水位线自适应** | 原版写死静态 `256k` 上限；当新版本/新模型（如 Gemini 4 Hydrogen）提升至 `512K` 时，指标胶囊与压缩水位线会显示诸如 `483k/256k (189%) · 距压缩余 0`。 | **Protobuf 原生模型上限动态识别**：直接从会话 SQLite 的 `ContextWindowMetadata` 实时读取当前模型的真实 `max_context_tokens`（自动识别 `512k`、`256k`、`160k`、`840k` 等不同模型窗口，默认兜底 `512k`），百分比与剩余额度 100% 精准。 |
+| **4. 新版全功能深度汉化补全（990+ 词条）** | 官方近期版本新推功能（如远程控制、二维码扫码连接、WSL 切换、浏览器内嵌安全拦截等）在旧版补丁中大量出现英文残留。 | **全量补齐官方近期新版特性词条**：全面覆盖「远程控制 (Remote Control)」、「设备名称 (Device Name)」、「复制链接/扫码在远程控制中打开」、「适用于 Linux 的 Windows 子系统 (WSL)」、「内置浏览器内嵌限制与私密连接警示」等近百条高频界面词汇，总词条扩充至 990+ 条！ |
+| **5. 智能唤醒指令与离线 `重新汉化.bat`** | 官方大版本更新覆盖核心文件后，用户往往需要去翻看文档输入复杂安装参数。 | **多层自愈容灾体系**：根目录预置一键免配置批处理 `重新汉化.bat`，双击 2 秒内恢复；同时在 `SKILL.md` 中绑定高频短语，在客户端对话框直接发「重新汉化」或「修复汉化」，Agent 即自动静默完成修复。 |
 
 ---
 
@@ -58,6 +59,11 @@
 
 ## 🕒 版本演进简史
 
+- **2026-11-17（v5.2.2 · 上下文水位线动态适配）**：
+  1. **动态上下文上限自适应（修复 512K 模型显示超 100% Bug）**：移除写死的 `256000` 上限，直接解析会话 SQLite 中 `ContextWindowMetadata.max_context_tokens` 真实上限（支持 Gemini 4 Hydrogen 的 `512k`、Flash/Argon 的 `256k`、Claude 的 `160k`/`840k` 等按调用实时跟随，默认兜底 `512k`）；
+  2. **自动配置迁移**：`install.mjs install` 自动将旧版 `user/config.json` 中遗留的静态 `256000` 迁移为 `"auto"`。
+- **2026-11-12（v5.2.1 · 新版功能深度汉化补全）**：
+  词条总数扩充至 990+ 条，补全远程控制 (Remote Control)、设备名称、WSL、内置浏览器安全提示与步骤确认等新功能界面。
 - **2026-11-12（v5.2.0 · JackHua 增强版首发）**：
   1. **首创 Windows 快捷方式双启动联合守护（`LaunchAntigravity.vbs`）**：彻底解决客户端退出重启变回英文的体验缺陷，安装时自动感知并绑定桌面与开始菜单快捷方式，开机/重启客户端 100% 自动保持中文；
   2. **首创 Chromium DWM 白底工字型光标 (I-beam) 标准防隐形**：恢复系统标准默认粗细与大小的工字指针（1px 纤细主干），通过上下文色彩方案强制声明，彻底根治白底输入框中鼠标光标发白隐形的问题，白天纯黑、黑夜纯白，点选文字精准不遮挡；

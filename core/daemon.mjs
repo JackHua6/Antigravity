@@ -2,10 +2,10 @@
 /**
  * chuanban-antigravity-theme-patch · CDP Theme & Live Metrics Daemon (core/daemon.mjs)
  *
- * 架构特性（v5.1.4）：
+ * 架构特性（v5.2.2）：
  * 1. 动态 Node 分级：
- *    - Node >= 22.0：完整启用昼夜双模式独立主题（暖纸浅色 + 官方 onyx 深色）、四层字体、输入框三态、900条汉化、死锁自愈。
- *    - Node >= 22.13：动态 `await import('node:sqlite')` 解锁底部实时会话指标胶囊（O(1) 增量尾行解析）；低版本优雅降级绝不崩溃。
+ *    - Node >= 22.0：完整启用昼夜双模式独立主题（暖纸浅色 + 官方 onyx 深色）、四层字体、输入框三态、990+条汉化、死锁自愈。
+ *    - Node >= 22.13：动态 `await import('node:sqlite')` 解锁底部实时会话指标胶囊（O(1) 增量尾行解析 + 模型真实上下文上限自适应）；低版本优雅降级绝不崩溃。
  * 2. 模块化与热重载：
  *    - 周期性检测 `user/config.json`、`user/custom.css`、`user/i18n.override.json`、`user/custom.js` 的 mtime，
  *      用户或对方 Agent 修改 `user/` 层后 2.5 秒内自动重新构建签名并热更新至所有打开的 Antigravity 窗口。
@@ -140,7 +140,8 @@ function resolveActiveChannelEndpoints(channelMode = 'auto', userCfg = {}) {
 // ============================================================================
 // 2. 动态构建注入载荷（支持 core/ + user/ 实时合并与热更新签名）
 // ============================================================================
-const BASE_VERSION = '20261111-v5.1.4';
+const BASE_VERSION = '20261117-v5.2.2';
+const DEFAULT_CONTEXT_LIMIT = 512000;
 let cachedBundleSig = '';
 let cachedInjectScript = '';
 let cachedPatchVersion = '';
@@ -148,7 +149,7 @@ let activeConfig = {
   enabled: true,
   channel: 'auto',
   preset: 'high-contrast',
-  contextLimit: 256000,
+  contextLimit: 0,
   modules: {
     i18n: true,
     metrics: true,
@@ -209,7 +210,13 @@ function rebuildBundleIfNeeded() {
   const enabled = SAFE_MODE ? true : userCfg.enabled !== false;
   const channel = CLI_CHANNEL || userCfg.channel || 'auto';
   const preset = userCfg.preset || 'high-contrast';
-  const contextLimit = Number(userCfg.contextLimit) > 0 ? Number(userCfg.contextLimit) : 256000;
+  // contextLimit: 'auto' / 0 / 未设置 => 由 SQLite gen_metadata 动态读取模型真实 max_context_tokens（缺失时回退 512000）
+  const rawContextLimit = SAFE_MODE ? 'auto' : userCfg.contextLimit;
+  const parsedContextLimit =
+    rawContextLimit === 'auto' || rawContextLimit === undefined || rawContextLimit === null || rawContextLimit === ''
+      ? 0
+      : Number(rawContextLimit);
+  const contextLimit = Number.isFinite(parsedContextLimit) && parsedContextLimit > 0 ? parsedContextLimit : 0;
 
   const rawModules = Object.assign({}, userCfg.features || {}, userCfg.modules || {});
   if (typeof rawModules.metricsCapsule === 'boolean' && typeof rawModules.metrics !== 'boolean') {
@@ -287,7 +294,7 @@ function rebuildBundleIfNeeded() {
     .update(customCss)
     .update(JSON.stringify(mergedDict))
     .update(customJs)
-    .update(JSON.stringify({ preset, modules, themeVars, selectors: activeConfig.selectors }))
+    .update(JSON.stringify({ preset, contextLimit, modules, themeVars, selectors: activeConfig.selectors }))
     .digest('hex')
     .slice(0, 8);
 
@@ -469,6 +476,15 @@ function fmtTok(n) {
   return String(n);
 }
 
+function fmtCtxLimit(n) {
+  if (!n || n <= 0) return '0';
+  if (n >= 1000000) {
+    const m = n / 1000000;
+    return Number.isInteger(m) ? `${m}M` : `${m.toFixed(1)}M`;
+  }
+  return `${Math.round(n / 1000)}k`;
+}
+
 function fmtNum(n) {
   return (n || 0).toLocaleString('en-US');
 }
@@ -480,7 +496,7 @@ function getDbSignature(cascadeId, conversationsDir) {
     if (!st) return null;
     const wst = fs.statSync(`${dbPath}-wal`, { throwIfNoEntry: false });
     const walSig = wst ? `${wst.mtimeMs}:${wst.size}` : '0:0';
-    return `${st.mtimeMs}:${st.size}|${walSig}`;
+    return `${st.mtimeMs}:${st.size}|${walSig}|limit:${activeConfig.contextLimit}`;
   } catch {
     return null;
   }
@@ -490,6 +506,9 @@ function parseGenMetadataRow(r) {
   const top = parseProto(r.data);
   const chat = top.has(1) ? parseProto(top.get(1)) : new Map();
   const usage = chat.has(4) ? parseProto(chat.get(4)) : new Map();
+  const startMeta = chat.has(9) ? parseProto(chat.get(9)) : null;
+  const cwMeta = startMeta && startMeta.has(10) ? parseProto(startMeta.get(10)) : null;
+  const maxCtx = cwMeta ? cwMeta.get(4) || 0 : 0;
   const ttftMap = chat.has(11) ? parseProto(chat.get(11)) : new Map();
   const streamMap = chat.has(12) ? parseProto(chat.get(12)) : new Map();
 
@@ -507,6 +526,7 @@ function parseGenMetadataRow(r) {
     outTok,
     cacheRead,
     ctx: inTok + cacheRead,
+    maxCtx,
     thinkTok,
     respTok,
     ttft,
@@ -527,7 +547,6 @@ function parseConversationMetrics(cascadeId, conversationsDir) {
     return cached.payload;
   }
 
-  const contextLimitTokens = activeConfig.contextLimit || 256000;
   let db;
   try {
     db = new DatabaseSync(dbPath, { readOnly: true, timeout: 200 });
@@ -665,6 +684,17 @@ function parseConversationMetrics(cascadeId, conversationsDir) {
     }
 
     const last = valid[valid.length - 1];
+    let detectedMaxCtx = last.maxCtx || 0;
+    if (!detectedMaxCtx) {
+      for (let i = valid.length - 1; i >= 0; i--) {
+        if (valid[i].maxCtx > 0) {
+          detectedMaxCtx = valid[i].maxCtx;
+          break;
+        }
+      }
+    }
+    const contextLimitTokens =
+      activeConfig.contextLimit > 0 ? activeConfig.contextLimit : detectedMaxCtx || DEFAULT_CONTEXT_LIMIT;
     const streamTps = last.stream >= 0.25 ? last.outTok / last.stream : 0;
     const e2eTps = last.totDur > 0 ? last.outTok / last.totDur : 0;
     const displayTps = streamTps > 0 && streamTps <= 600 ? streamTps : e2eTps;
@@ -673,7 +703,7 @@ function parseConversationMetrics(cascadeId, conversationsDir) {
     const lastCacheRate = last.ctx > 0 ? ((last.cacheRead / last.ctx) * 100).toFixed(1) : '0.0';
     const sessionCacheRate = totalIn + totalCache > 0 ? ((totalCache / (totalIn + totalCache)) * 100).toFixed(1) : '0.0';
     const remainCtx = Math.max(0, contextLimitTokens - last.ctx);
-    const limitKStr = Math.round(contextLimitTokens / 1000) + 'k';
+    const limitKStr = fmtCtxLimit(contextLimitTokens);
 
     const inlineHtml = [
       `<span>${Math.round(displayTps)} tok/s</span>`,

@@ -80,7 +80,7 @@ function buildManifest(baseDir = __dirname) {
   }
   const manifest = {
     name: 'jackhua-antigravity-theme-patch',
-    version: '5.2.0',
+    version: '5.2.2',
     minNodeVersion: '22.0.0',
     fullMetricsNodeVersion: '22.13.0',
     distribution: {
@@ -992,6 +992,10 @@ async function runInstall() {
         delete currentCfg.selectors;
       }
     }
+  }
+  // 自动迁移早期版本遗留在 user/config.json 中的静态 256000 上限为 'auto'，由 core/daemon.mjs 动态读取模型真实 max_context_tokens（如 512k/256k/160k）
+  if (currentCfg.contextLimit === undefined || currentCfg.contextLimit === null || currentCfg.contextLimit === 256000) {
+    currentCfg.contextLimit = 'auto';
   }
   fs.writeFileSync(userConfigPath, JSON.stringify(currentCfg, null, 2) + '\n', 'utf8');
 
