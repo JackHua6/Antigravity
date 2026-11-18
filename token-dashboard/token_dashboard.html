@@ -1,0 +1,2213 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>" />
+<title>AI Token 工作台看板 · Multi-Agent Telemetry</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --bg-soft: #141720;
+    --card: #181c26;
+    --card-hover: #1f2432;
+    --border: #283040;
+    --border-soft: rgba(255, 255, 255, 0.06);
+    --text: #e6edf7;
+    --text-muted: #94a3b8;
+    --text-dim: #64748b;
+    --teal: #2dd4bf;
+    --violet: #a78bfa;
+    --blue: #38bdf8;
+    --green: #34d399;
+    --amber: #fbbf24;
+    --red: #fb7185;
+    --orange: #fb923c;
+    --indigo: #818cf8;
+    --shadow: 0 10px 30px rgba(0, 0, 0, 0.28);
+    --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background:
+      radial-gradient(1200px 500px at 12% -8%, rgba(45, 212, 191, 0.09), transparent 60%),
+      radial-gradient(900px 450px at 88% -6%, rgba(167, 139, 250, 0.09), transparent 58%),
+      var(--bg);
+    color: var(--text);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 1.65;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .mono {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .container {
+    width: 100%;
+    max-width: 1380px;
+    margin: 0 auto;
+    padding: 20px 20px 56px;
+  }
+
+  /* Header */
+  .hero {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+
+  .hero-left h1 {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.25;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .hero-left h1 .title-text {
+    background: linear-gradient(135deg, #f8fafc 0%, #94a3b8 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .hero-sub {
+    margin-top: 6px;
+    color: var(--text-muted);
+    font-size: 13px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 500;
+    border: 1px solid var(--border);
+    background: rgba(24, 28, 38, 0.85);
+    color: var(--text-muted);
+  }
+
+  .badge.live {
+    border-color: rgba(52, 211, 153, 0.35);
+    background: rgba(52, 211, 153, 0.1);
+    color: var(--green);
+  }
+
+  .badge.offline {
+    border-color: rgba(56, 189, 248, 0.35);
+    background: rgba(56, 189, 248, 0.1);
+    color: var(--blue);
+  }
+
+  .hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .btn {
+    appearance: none;
+    border: 1px solid var(--border);
+    background: var(--card);
+    color: var(--text);
+    padding: 8px 14px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.18s ease;
+    font-family: var(--font-sans);
+  }
+
+  .btn:hover {
+    background: var(--card-hover);
+    border-color: #3a465e;
+    transform: translateY(-1px);
+  }
+
+  .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  .btn.primary {
+    background: linear-gradient(135deg, rgba(45, 212, 191, 0.2), rgba(56, 189, 248, 0.18));
+    border-color: rgba(45, 212, 191, 0.45);
+    color: #ccfbf1;
+  }
+
+  .btn.primary:hover {
+    border-color: var(--teal);
+    box-shadow: 0 4px 16px rgba(45, 212, 191, 0.18);
+  }
+
+  .btn.accent {
+    background: rgba(129, 140, 248, 0.16);
+    border-color: rgba(129, 140, 248, 0.45);
+    color: #e0e7ff;
+  }
+
+  /* Sticky Control Bar */
+  .filter-bar {
+    position: sticky;
+    top: 12px;
+    z-index: 40;
+    background: rgba(20, 23, 32, 0.84);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 12px 16px;
+    margin-bottom: 20px;
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .filter-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .filter-group {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .filter-label {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-right: 4px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .pill {
+    border: 1px solid var(--border);
+    background: rgba(24, 28, 38, 0.8);
+    color: var(--text-muted);
+    padding: 5px 11px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.15s ease;
+    user-select: none;
+  }
+
+  .pill:hover {
+    color: var(--text);
+    border-color: #3e4a63;
+  }
+
+  .pill.active {
+    background: rgba(45, 212, 191, 0.14);
+    border-color: rgba(45, 212, 191, 0.55);
+    color: #ecfeff;
+  }
+
+  .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    flex-shrink: 0;
+  }
+
+  .date-input {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 4px 8px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-family: var(--font-mono);
+  }
+
+  .segmented {
+    display: inline-flex;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 2px;
+    gap: 2px;
+  }
+
+  .segmented button {
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    padding: 5px 11px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    font-family: var(--font-sans);
+  }
+
+  .segmented button.active {
+    background: var(--card-hover);
+    color: var(--teal);
+    box-shadow: inset 0 0 0 1px rgba(45, 212, 191, 0.28);
+  }
+
+  /* KPI Grid */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+
+  @media (max-width: 1180px) { .kpi-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  @media (max-width: 720px) { .kpi-grid { grid-template-columns: repeat(1, minmax(0, 1fr)); } }
+
+  .kpi-card {
+    background: linear-gradient(180deg, rgba(28, 33, 46, 0.92) 0%, rgba(22, 26, 36, 0.98) 100%);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px 18px;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    transition: transform 0.18s ease, border-color 0.18s ease;
+  }
+
+  .kpi-card:hover {
+    transform: translateY(-2px);
+    border-color: #364158;
+  }
+
+  .kpi-title {
+    font-size: 12px;
+    color: var(--text-muted);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
+  .kpi-value {
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+    color: #f8fafc;
+  }
+
+  .kpi-sub {
+    margin-top: 8px;
+    font-size: 12px;
+    color: var(--text-dim);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .kpi-sub span strong { color: var(--text-muted); font-weight: 600; }
+
+  /* Tabs */
+  .nav-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 12px;
+    margin-bottom: 20px;
+  }
+
+  .tab-btn {
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--text-muted);
+    padding: 8px 16px;
+    border-radius: 10px;
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    transition: all 0.16s ease;
+    font-family: var(--font-sans);
+  }
+
+  .tab-btn:hover {
+    color: var(--text);
+    background: rgba(255, 255, 255, 0.04);
+  }
+
+  .tab-btn.active {
+    color: var(--teal);
+    background: rgba(45, 212, 191, 0.1);
+    border-color: rgba(45, 212, 191, 0.35);
+  }
+
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; animation: fadeIn 0.2s ease; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Panels / Cards */
+  .panel {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 18px 20px;
+    margin-bottom: 18px;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  }
+
+  .panel-header {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+
+  .panel-title {
+    font-size: 16px;
+    font-weight: 650;
+    color: #f1f5f9;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .panel-desc {
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+
+  .grid-2 {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+  }
+
+  @media (max-width: 980px) { .grid-2 { grid-template-columns: 1fr; } }
+
+  /* Heatmap */
+  .heatmap-wrap {
+    overflow-x: auto;
+    padding-bottom: 6px;
+  }
+
+  .heatmap-svg {
+    display: block;
+    min-width: 720px;
+  }
+
+  .heatmap-cell {
+    cursor: pointer;
+    transition: opacity 0.12s ease, stroke 0.12s ease;
+  }
+
+  .heatmap-cell:hover {
+    stroke: #f8fafc;
+    stroke-width: 1.5px;
+  }
+
+  .heatmap-cell.selected {
+    stroke: var(--amber);
+    stroke-width: 2px;
+  }
+
+  .heatmap-footer {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-top: 10px;
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+
+  .legend-scale {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .legend-box {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+  }
+
+  /* Day Drilldown Drawer */
+  .day-drill {
+    margin-top: 14px;
+    padding: 14px 16px;
+    border-radius: 12px;
+    background: rgba(15, 17, 23, 0.72);
+    border: 1px solid var(--border);
+  }
+
+  .day-drill-head {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  /* Horizontal Bars */
+  .bar-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .bar-item-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 13px;
+    margin-bottom: 5px;
+  }
+
+  .bar-item-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .bar-track {
+    height: 10px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.06);
+    overflow: hidden;
+    display: flex;
+  }
+
+  .bar-seg {
+    height: 100%;
+    transition: width 0.3s ease;
+  }
+
+  .bar-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    font-size: 11.5px;
+    color: var(--text-dim);
+    margin-top: 4px;
+  }
+
+  /* 24h Chart */
+  .hourly-bars {
+    display: grid;
+    grid-template-columns: repeat(24, minmax(0, 1fr));
+    align-items: end;
+    gap: 5px;
+    height: 140px;
+    padding-top: 16px;
+  }
+
+  .hour-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 100%;
+    justify-content: flex-end;
+    gap: 4px;
+    cursor: pointer;
+  }
+
+  .hour-bar {
+    width: 100%;
+    min-height: 2px;
+    border-radius: 4px 4px 0 0;
+    background: linear-gradient(180deg, var(--teal), rgba(45, 212, 191, 0.35));
+    transition: all 0.2s ease;
+  }
+
+  .hour-col:hover .hour-bar {
+    filter: brightness(1.25);
+    box-shadow: 0 0 12px rgba(45, 212, 191, 0.35);
+  }
+
+  .hour-lbl {
+    font-size: 10px;
+    color: var(--text-dim);
+    font-family: var(--font-mono);
+  }
+
+  /* Tables */
+  .table-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+
+  .search-input, .select-input {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 7px 11px;
+    border-radius: 9px;
+    font-size: 13px;
+    outline: none;
+  }
+
+  .search-input:focus, .select-input:focus {
+    border-color: var(--teal);
+  }
+
+  .table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12.5px;
+    white-space: nowrap;
+  }
+
+  thead th {
+    background: rgba(15, 17, 23, 0.85);
+    color: var(--text-muted);
+    font-weight: 600;
+    text-align: left;
+    padding: 10px 8px;
+    font-size: 12px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    user-select: none;
+    position: sticky;
+    top: 0;
+  }
+
+  thead th.num, tbody td.num { text-align: right; }
+
+  thead th:hover { color: var(--teal); }
+
+  tbody tr:nth-child(even) { background: rgba(255, 255, 255, 0.018); }
+  tbody tr:hover { background: rgba(45, 212, 191, 0.06); }
+
+  tbody td {
+    padding: 8px 8px;
+    border-bottom: 1px solid var(--border-soft);
+    color: var(--text);
+  }
+
+  .client-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 2px 7px;
+    border-radius: 6px;
+    font-size: 11.5px;
+    font-weight: 500;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-soft);
+  }
+
+  .status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 2px 9px;
+    border-radius: 999px;
+    font-size: 11.5px;
+    font-weight: 600;
+  }
+
+  .status-ok { background: rgba(52, 211, 153, 0.14); color: var(--green); }
+  .status-warn { background: rgba(251, 191, 36, 0.14); color: var(--amber); }
+  .status-muted { background: rgba(148, 163, 184, 0.14); color: var(--text-muted); }
+
+  /* Accordion */
+  details.callout {
+    background: rgba(15, 17, 23, 0.55);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--blue);
+    border-radius: 10px;
+    padding: 12px 16px;
+    margin-top: 14px;
+  }
+
+  details.callout summary {
+    cursor: pointer;
+    font-weight: 600;
+    color: #e2e8f0;
+    font-size: 13px;
+  }
+
+  details.callout .callout-body {
+    margin-top: 10px;
+    font-size: 12.5px;
+    color: var(--text-muted);
+    line-height: 1.7;
+  }
+
+  /* Tooltip */
+  #tooltip {
+    position: fixed;
+    z-index: 100;
+    pointer-events: none;
+    opacity: 0;
+    background: rgba(15, 17, 23, 0.96);
+    border: 1px solid #39465e;
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 12px;
+    color: var(--text);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+    max-width: 310px;
+    transition: opacity 0.1s ease;
+  }
+
+  /* Modal */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 90;
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(4px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+
+  .modal-backdrop.open { display: flex; }
+
+  .modal {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    width: 100%;
+    max-width: 640px;
+    padding: 22px 24px;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+  }
+
+  .modal h3 { font-size: 18px; margin-bottom: 6px; }
+  .modal p { font-size: 13px; color: var(--text-muted); margin-bottom: 12px; }
+
+  .textarea, .text-input {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    padding: 10px 12px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    margin-bottom: 12px;
+  }
+
+  .textarea { min-height: 140px; resize: vertical; }
+
+  .probe-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 14px;
+    margin-top: 14px;
+  }
+
+  .probe-card {
+    background: rgba(15, 17, 23, 0.6);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 16px;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 36px 20px;
+    color: var(--text-dim);
+  }
+
+  .toast {
+    position: fixed;
+    bottom: 22px;
+    right: 22px;
+    z-index: 110;
+    background: #1e293b;
+    border: 1px solid var(--teal);
+    color: #f8fafc;
+    padding: 10px 16px;
+    border-radius: 10px;
+    font-size: 13px;
+    box-shadow: var(--shadow);
+    display: none;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <header class="hero">
+    <div class="hero-left">
+      <h1><span>📊</span><span class="title-text">AI Token 工作台看板</span></h1>
+      <div class="hero-sub">
+        <span id="modeBadge" class="badge offline">📊 本地扫描看板</span>
+        <span id="metaTime" class="badge mono">加载中...</span>
+        <span id="metaRange" class="badge mono">区间：--</span>
+      </div>
+    </div>
+    <div class="hero-actions">
+      <button id="privacyToggleBtn" class="btn" onclick="togglePrivacyMode()" title="一键隐藏本地项目目录名，方便截图分享">🙈 隐私脱敏</button>
+      <button class="btn primary" onclick="exportFilteredCsv()">⬇ 导出明细 CSV</button>
+    </div>
+  </header>
+
+  <!-- Global Sticky Filter Bar -->
+  <section class="filter-bar">
+    <div class="filter-row">
+      <div class="filter-group">
+        <span class="filter-label">时间范围</span>
+        <button class="pill active" data-range="all" onclick="setRange('all')">全部历史</button>
+        <button class="pill" data-range="30d" onclick="setRange('30d')">近 30 天</button>
+        <button class="pill" data-range="7d" onclick="setRange('7d')">近 7 天</button>
+        <button class="pill" data-range="month" onclick="setRange('month')">本月</button>
+        <input id="sinceInput" class="date-input" type="date" onchange="applyCustomRange()" title="开始日期" />
+        <span style="color:var(--text-dim)">~</span>
+        <input id="untilInput" class="date-input" type="date" onchange="applyCustomRange()" title="结束日期" />
+        <button id="resetFilterBtn" class="pill" style="display:none;border-color:rgba(245,158,11,0.45);color:var(--amber);" onclick="resetAllFilters()">↺ 重置筛选</button>
+      </div>
+
+      <div class="filter-group">
+        <span class="filter-label">统计口径</span>
+        <div class="segmented">
+          <button id="metricAllBtn" class="active" onclick="setMetricMode('all')">全量 (含缓存读)</button>
+          <button id="metricNetBtn" onclick="setMetricMode('net')">净新增 (不含缓存读)</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="filter-row">
+      <div class="filter-group" id="clientFilters">
+        <span class="filter-label">软件筛选</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- KPI Cards -->
+  <section class="kpi-grid" id="kpiGrid"></section>
+
+  <!-- View Tabs -->
+  <nav class="nav-tabs">
+    <button class="tab-btn active" data-tab="overview" onclick="switchTab('overview')">🔥 总览与热力图</button>
+    <button class="tab-btn" data-tab="clients" onclick="switchTab('clients')">⏱️ 软件时长与对比</button>
+    <button class="tab-btn" data-tab="models" onclick="switchTab('models')">🧠 模型深度对比</button>
+    <button class="tab-btn" data-tab="timeline" onclick="switchTab('timeline')">📅 每日 / 月度趋势</button>
+    <button class="tab-btn" data-tab="projects" onclick="switchTab('projects')">📁 项目工作区归因</button>
+  </nav>
+
+  <!-- Tab 1: Overview & Heatmap -->
+  <section id="tab-overview" class="tab-panel active">
+    <div class="panel">
+      <div class="panel-header">
+        <div>
+          <div class="panel-title">🗓️ 每日 AI 消耗热力图</div>
+          <div class="panel-desc">点击任意日期方块可下钻查看当天各软件、各模型消耗明细</div>
+        </div>
+        <div class="filter-group">
+          <div class="segmented">
+            <button id="hmModeTokens" class="active" onclick="setHeatmapMetric('tokens')">按 Token</button>
+            <button id="hmModeCost" onclick="setHeatmapMetric('cost')">按费用 ($)</button>
+            <button id="hmModeTime" onclick="setHeatmapMetric('time')">按活跃时长</button>
+          </div>
+          <select id="hmThemeSelect" class="select-input" onchange="setHeatmapTheme(this.value)">
+            <option value="emerald">翡翠绿</option>
+            <option value="teal">科技青</option>
+            <option value="amber">烈焰橙</option>
+            <option value="violet">雅紫罗兰</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="heatmap-wrap" id="heatmapContainer"></div>
+
+      <div class="heatmap-footer">
+        <span id="heatmapSummaryLine">共 -- 天有记录</span>
+        <div class="legend-scale" id="heatmapLegend"></div>
+      </div>
+
+      <div class="day-drill" id="dayDrilldown" style="display:none;"></div>
+    </div>
+
+    <div class="grid-2">
+      <div class="panel">
+        <div class="panel-header">
+          <div>
+            <div class="panel-title">⏱️ 各软件活跃时间排行</div>
+            <div class="panel-desc" id="timeRankHint">基于本地会话时间戳计算的实际活跃工作时长</div>
+          </div>
+        </div>
+        <div id="overviewTimeBars" class="bar-list"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <div>
+            <div class="panel-title">🧩 各软件 Token 构成比例</div>
+            <div class="panel-desc"><span style="color:#38bdf8;">●</span> 新输入 (In+CW) · <span style="color:#34d399;">●</span> 输出 (Out) · <span style="color:#64748b;">●</span> 读缓存 (CR)</div>
+          </div>
+        </div>
+        <div id="overviewTokenBars" class="bar-list"></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <div>
+          <div class="panel-title">🕒 24 小时工作节律分布</div>
+          <div class="panel-desc">汇总全天 00:00 – 23:00 的 Token 消耗高峰（点击柱子查看该时段详情）</div>
+        </div>
+        <span id="peakHourBadge" class="badge mono">高峰时段：--</span>
+      </div>
+      <div id="hourlyChart" class="hourly-bars"></div>
+    </div>
+  </section>
+
+  <!-- Tab 2: Software & Active Time -->
+  <section id="tab-clients" class="tab-panel">
+    <div class="panel">
+      <div class="panel-header">
+        <div>
+          <div class="panel-title">⏱️ 各 AI 软件使用时长与 Token 效率全览</div>
+          <div class="panel-desc">直观对比各软件的投入时长、会话并发、最长连续工作记录与单位小时吞吐</div>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table id="clientsTable"></table>
+      </div>
+    </div>
+  </section>
+
+  <!-- Tab 3: Models Deep Dive -->
+  <section id="tab-models" class="tab-panel">
+    <div class="panel">
+      <div class="panel-header">
+        <div>
+          <div class="panel-title">📊 Top 20 模型消耗对比（横向剖析）</div>
+          <div class="panel-desc">一眼对比不同模型之间在上下文吞吐、缓存命中率、输出放大比和等效费用上的差异</div>
+        </div>
+        <div class="segmented">
+          <button id="mChartTok" class="active" onclick="setModelChartMetric('tokens')">按 Token 量</button>
+          <button id="mChartCost" onclick="setModelChartMetric('cost')">按等效费用</button>
+          <button id="mChartOut" onclick="setModelChartMetric('output')">按纯输出量</button>
+        </div>
+      </div>
+      <div id="modelCompareBars" class="bar-list"></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <div>
+          <div class="panel-title">🧠 模型明细总表</div>
+          <div class="panel-desc">点击表头任意列名可升降序排序</div>
+        </div>
+      </div>
+      <div class="table-controls">
+        <input id="modelSearch" class="search-input" type="text" placeholder="搜索模型名或厂商 (如 gemini / opus / gpt)..." oninput="renderModelsTable()" />
+        <select id="modelProviderFilter" class="select-input" onchange="renderModelsTable()">
+          <option value="">全部厂商 (Provider)</option>
+        </select>
+      </div>
+      <div class="table-wrap">
+        <table id="modelsTable"></table>
+      </div>
+
+      <details class="callout">
+        <summary>💡 为什么只有 Claude 显示 Cache Write（缓存写入），其他模型都是 0？</summary>
+        <div class="callout-body">
+          这是大模型厂商底层的计费返回机制差异：<br />
+          • <strong>Anthropic (Claude)</strong> 采用显式缓存写入：新建前缀缓存时 API 会单独返回并计费 <code>cache_creation_input_tokens</code>（即 Cache Write），因此普通 Input 极少而 Cache Write 很高。<br />
+          • <strong>OpenAI (Codex)、Google (Gemini/Antigravity)、DeepSeek、Tencent (WorkBuddy)</strong> 采用隐式自动缓存：首次输入建缓存的 Token 直接算在普通 <code>Input</code> 列中，不单独返回 Cache Write 字段；后续命中缓存则计入 <code>Cache Read</code>。<br />
+          • 若要横向公平对比“非缓存读取的新增上下文”，建议在顶部将口径切换为 <strong>「净新增 (不含缓存读)」</strong>（即 <code>Input + Cache Write + Output</code>）。
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <!-- Tab 4: Timeline (Monthly + Daily) -->
+  <section id="tab-timeline" class="tab-panel">
+    <div class="panel">
+      <div class="panel-header">
+        <div>
+          <div class="panel-title">📆 月度趋势汇总</div>
+          <div class="panel-desc">按自然月聚合 Token 消耗、折合费用与活跃模型列表</div>
+        </div>
+      </div>
+      <div id="monthlyBars" class="bar-list" style="margin-bottom:16px;"></div>
+      <div class="table-wrap">
+        <table id="monthlyTable"></table>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <div>
+          <div class="panel-title">📅 每日流水明细</div>
+          <div class="panel-desc">按日期倒序展示每天的软件/模型分布与活跃时长</div>
+        </div>
+        <input id="dailySearch" class="search-input" type="text" placeholder="按日期或模型过滤 (如 2026-11)..." oninput="renderDailyTable()" />
+      </div>
+      <div class="table-wrap">
+        <table id="dailyTable"></table>
+      </div>
+    </div>
+  </section>
+
+  <!-- Tab 5: Workspaces / Projects -->
+  <section id="tab-projects" class="tab-panel">
+    <div class="panel">
+      <div class="panel-header">
+        <div>
+          <div class="panel-title">📁 项目工作区归因</div>
+          <div class="panel-desc">查看每个本地目录 / 代码项目上具体使用了哪个软件和模型，以及花费了多少 Token</div>
+        </div>
+        <input id="projectSearch" class="search-input" type="text" placeholder="搜索项目名或模型 (如 my-app / gemini / codex)..." oninput="renderProjectsTable()" />
+      </div>
+      <div class="table-wrap">
+        <table id="projectsTable"></table>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div id="tooltip"></div>
+<div id="toast" class="toast"></div>
+<script id="initial-data" type="application/json">{"meta":{"clientLabels":{}},"summary":{"totalTokens":0,"totalCost":0,"totalDays":0,"activeDays":0,"clients":[],"models":[]},"contributions":[],"models":[],"monthly":[],"hourly":[],"workspaces":[],"timeMetricsByRange":{"all":{},"30d":{},"month":{},"7d":{}}}</script>
+<script>
+  const CLIENT_COLORS = {
+    "antigravity-extension": "#2dd4bf",
+    "antigravity": "#14b8a6",
+    "antigravity-cli": "#06b6d4",
+    "claude": "#fb923c",
+    "codex": "#e879f9",
+    "cursor": "#c084fc",
+    "windsurf": "#22d3ee",
+    "workbuddy": "#38bdf8",
+    "codebuddy": "#0ea5e9",
+    "doubaowork": "#f472b6",
+    "trae-cn": "#818cf8",
+    "trae": "#6366f1",
+    "zcode": "#fbbf24",
+    "qoder": "#fb7185",
+    "dsh": "#a78bfa",
+    "gemini": "#34d399",
+    "opencode": "#4ade80",
+    "cline": "#60a5fa",
+    "roocode": "#fb923c",
+    "kilocode": "#facc15",
+    "copilot": "#93c5fd",
+    "kiro": "#f87171",
+    "zed": "#67e8f9",
+    "warp": "#e2e8f0",
+    "kimi": "#38bdf8",
+    "qwen": "#a78bfa"
+  };
+
+  const HEATMAP_PALETTES = {
+    emerald: ["#161b22", "#0a2e24", "#064e3b", "#047857", "#10b981", "#34d399", "#6ee7b7"],
+    teal:    ["#161b22", "#0b2c32", "#114b53", "#0f766e", "#14b8a6", "#2dd4bf", "#67e8f9"],
+    amber:   ["#161b22", "#3b1806", "#78350f", "#b45309", "#d97706", "#f59e0b", "#fcd34d"],
+    violet:  ["#161b22", "#26104f", "#4c1d95", "#6d28d9", "#8b5cf6", "#a78bfa", "#ddd6fe"]
+  };
+
+  let RAW_DATA = JSON.parse(document.getElementById("initial-data").textContent);
+
+  const STATE = {
+    range: "all",       // all | 30d | 7d | month | custom
+    since: "",
+    until: "",
+    selectedClients: new Set(), // empty = all
+    metricMode: "all",  // all | net
+    hmMetric: "tokens", // tokens | cost | time
+    hmTheme: "emerald",
+    selectedDay: null,
+    activeTab: "overview",
+    modelChartMetric: "tokens",
+    modelSort: { key: "total", dir: -1 },
+    clientSort: { key: "activeTimeMs", dir: -1 },
+    customTimeMetrics: null,
+    privacyMode: false
+  };
+
+  function escHtml(s) {
+    return String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+
+  const _wsAliasMap = new Map();
+  function maskWorkspace(label, key) {
+    if (!STATE.privacyMode) return label || key || "Unknown workspace";
+    const id = String(key || label || "unknown");
+    if (!_wsAliasMap.has(id)) _wsAliasMap.set(id, `工作区 #${_wsAliasMap.size + 1}`);
+    return _wsAliasMap.get(id);
+  }
+
+  function togglePrivacyMode() {
+    STATE.privacyMode = !STATE.privacyMode;
+    const btn = document.getElementById("privacyToggleBtn");
+    if (btn) {
+      btn.classList.toggle("accent", STATE.privacyMode);
+      btn.textContent = STATE.privacyMode ? "👁 已脱敏（点击恢复）" : "🙈 隐私脱敏";
+    }
+    renderProjectsTable();
+    showToast(STATE.privacyMode ? "已开启隐私脱敏：已隐藏本地项目路径" : "已恢复原始项目路径显示");
+  }
+
+  function resetAllFilters() {
+    STATE.range = "all";
+    STATE.since = "";
+    STATE.until = "";
+    STATE.selectedClients.clear();
+    STATE.selectedDay = null;
+    document.querySelectorAll("[data-range]").forEach(el => el.classList.toggle("active", el.dataset.range === "all"));
+    const { since, until } = getDateBounds();
+    document.getElementById("sinceInput").value = since;
+    document.getElementById("untilInput").value = until;
+    updateClientPills();
+    renderAll();
+  }
+
+  function clientName(id) {
+    return (RAW_DATA.meta && RAW_DATA.meta.clientLabels && RAW_DATA.meta.clientLabels[id]) || id;
+  }
+
+  function clientColor(id) {
+    return CLIENT_COLORS[id] || "#94a3b8";
+  }
+
+  function fmtNum(n) {
+    return Math.round(n || 0).toLocaleString("en-US");
+  }
+
+  function fmtCompact(n) {
+    n = n || 0;
+    if (n >= 1e9) return (n / 1e9).toFixed(2) + "B";
+    if (n >= 1e6) return (n / 1e6).toFixed(2) + "M";
+    if (n >= 1e3) return (n / 1e3).toFixed(1) + "K";
+    return String(Math.round(n));
+  }
+
+  function fmtCost(c) {
+    c = c || 0;
+    if (c >= 100) return "$" + c.toFixed(2);
+    if (c >= 1) return "$" + c.toFixed(2);
+    if (c > 0) return "$" + c.toFixed(4);
+    return "$0.00";
+  }
+
+  function fmtDuration(ms) {
+    if (!ms || ms <= 0) return "0m";
+    const totalMin = Math.round(ms / 60000);
+    const h = Math.floor(totalMin / 60);
+    const m = totalMin % 60;
+    if (h === 0) return m + "m";
+    return h + "h " + m + "m";
+  }
+
+  function fmtSpeed(msPer1K) {
+    if (msPer1K === null || msPer1K === undefined) return "—";
+    if (msPer1K >= 1000) return (msPer1K / 1000).toFixed(2) + "s/1K";
+    return Math.round(msPer1K) + "ms/1K";
+  }
+
+  function tokenValue(t) {
+    const inp = t.input || 0;
+    const out = t.output || 0;
+    const cw = t.cacheWrite || 0;
+    const cr = t.cacheRead || 0;
+    return STATE.metricMode === "net" ? (inp + cw + out) : (inp + cw + out + cr);
+  }
+
+  function showToast(msg) {
+    const el = document.getElementById("toast");
+    el.textContent = msg;
+    el.style.display = "block";
+    clearTimeout(el._timer);
+    el._timer = setTimeout(() => { el.style.display = "none"; }, 3200);
+  }
+
+  function toLocalIsoDate(d) {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  }
+
+  function getDateBounds() {
+    const allDates = (RAW_DATA.contributions || []).map(c => c.date).sort();
+    const minD = allDates[0] || "";
+    const maxD = allDates[allDates.length - 1] || "";
+    if (STATE.range === "all") return { since: minD, until: maxD };
+    if (STATE.range === "custom") return { since: STATE.since || minD, until: STATE.until || maxD };
+
+    const ref = maxD ? new Date(maxD + "T00:00:00") : new Date();
+    if (STATE.range === "7d") {
+      const s = new Date(ref);
+      s.setDate(s.getDate() - 6);
+      return { since: toLocalIsoDate(s), until: maxD };
+    }
+    if (STATE.range === "30d") {
+      const s = new Date(ref);
+      s.setDate(s.getDate() - 29);
+      return { since: toLocalIsoDate(s), until: maxD };
+    }
+    if (STATE.range === "month") {
+      return { since: maxD.slice(0, 7) + "-01", until: maxD };
+    }
+    return { since: minD, until: maxD };
+  }
+
+  function setRange(r) {
+    STATE.range = r;
+    STATE.customTimeMetrics = null;
+    document.querySelectorAll("[data-range]").forEach(el => {
+      el.classList.toggle("active", el.dataset.range === r);
+    });
+    const { since, until } = getDateBounds();
+    document.getElementById("sinceInput").value = since;
+    document.getElementById("untilInput").value = until;
+    renderAll();
+  }
+
+  function applyCustomRange() {
+    let since = document.getElementById("sinceInput").value;
+    let until = document.getElementById("untilInput").value;
+    if (since && until && since > until) {
+      const tmp = since; since = until; until = tmp;
+      document.getElementById("sinceInput").value = since;
+      document.getElementById("untilInput").value = until;
+    }
+    STATE.range = "custom";
+    STATE.since = since;
+    STATE.until = until;
+    STATE.customTimeMetrics = null;
+    document.querySelectorAll("[data-range]").forEach(el => el.classList.remove("active"));
+    renderAll();
+  }
+
+  function setMetricMode(mode) {
+    STATE.metricMode = mode;
+    document.getElementById("metricAllBtn").classList.toggle("active", mode === "all");
+    document.getElementById("metricNetBtn").classList.toggle("active", mode === "net");
+    renderAll();
+  }
+
+  function toggleClient(cid) {
+    if (cid === "__ALL__") {
+      STATE.selectedClients.clear();
+    } else {
+      if (STATE.selectedClients.has(cid)) {
+        STATE.selectedClients.delete(cid);
+      } else {
+        STATE.selectedClients.add(cid);
+      }
+    }
+    updateClientPills();
+    renderAll();
+  }
+
+  function updateClientPills() {
+    document.querySelectorAll("[data-client-pill]").forEach(el => {
+      const cid = el.dataset.clientPill;
+      if (cid === "__ALL__") {
+        el.classList.toggle("active", STATE.selectedClients.size === 0);
+      } else {
+        el.classList.toggle("active", STATE.selectedClients.has(cid));
+      }
+    });
+  }
+
+  function initFilters() {
+    const { since, until } = getDateBounds();
+    document.getElementById("sinceInput").value = since;
+    document.getElementById("untilInput").value = until;
+    const genAt = (RAW_DATA.meta && RAW_DATA.meta.generatedAt) ? RAW_DATA.meta.generatedAt.replace("T", " ") : "待扫描生成";
+    document.getElementById("metaTime").textContent = "快照生成: " + genAt;
+    document.getElementById("metaRange").textContent = (since && until) ? `日志跨度: ${since} ~ ${until}` : "日志跨度: 暂无记录";
+
+    const container = document.getElementById("clientFilters");
+    const clients = (RAW_DATA.summary && RAW_DATA.summary.clients) || [];
+    let html = `<span class="filter-label">软件筛选</span>
+      <button class="pill active" data-client-pill="__ALL__" onclick="toggleClient('__ALL__')">全部软件 (${clients.length})</button>`;
+    for (const cid of clients) {
+      html += `<button class="pill" data-client-pill="${cid}" onclick="toggleClient('${cid}')">
+        <span class="dot" style="background:${clientColor(cid)}"></span>${clientName(cid)}
+      </button>`;
+    }
+    container.innerHTML = html;
+    updateClientPills();
+
+    // Populate provider filter
+    const providers = Array.from(new Set((RAW_DATA.models || []).map(m => m.provider).filter(Boolean))).sort();
+    const provSel = document.getElementById("modelProviderFilter");
+    provSel.innerHTML = `<option value="">全部厂商 (${providers.length})</option>` +
+      providers.map(p => `<option value="${p}">${p}</option>`).join("");
+  }
+
+  function isClientSelected(cid) {
+    return STATE.selectedClients.size === 0 || STATE.selectedClients.has(cid);
+  }
+
+  // Compute filtered view state from RAW_DATA
+  function computeFiltered() {
+    const { since, until } = getDateBounds();
+    const days = [];
+    const clientMap = {};
+    const modelMap = {};
+    const monthMap = {};
+
+    // Index baseline model performance (msPer1KTokens)
+    const perfLookup = {};
+    for (const m of (RAW_DATA.models || [])) {
+      perfLookup[`${m.client}::${m.model}`] = m.performance || null;
+    }
+
+    for (const day of (RAW_DATA.contributions || [])) {
+      if (since && day.date < since) continue;
+      if (until && day.date > until) continue;
+
+      let dInput = 0, dOutput = 0, dCR = 0, dCW = 0, dReas = 0, dCost = 0, dMsgs = 0;
+      const filteredItems = [];
+
+      for (const item of (day.clients || [])) {
+        if (!isClientSelected(item.client)) continue;
+        const tk = item.tokens || {};
+        const inp = tk.input || 0;
+        const out = tk.output || 0;
+        const cr = tk.cacheRead || 0;
+        const cw = tk.cacheWrite || 0;
+        const reas = tk.reasoning || 0;
+        const cost = item.cost || 0;
+        const msgs = item.messages || 0;
+
+        dInput += inp; dOutput += out; dCR += cr; dCW += cw; dReas += reas;
+        dCost += cost; dMsgs += msgs;
+        filteredItems.push(item);
+
+        // Client aggregate
+        if (!clientMap[item.client]) {
+          clientMap[item.client] = {
+            client: item.client, input: 0, output: 0, cacheRead: 0, cacheWrite: 0,
+            reasoning: 0, cost: 0, messages: 0, activeDays: new Set(), models: new Set()
+          };
+        }
+        const cm = clientMap[item.client];
+        cm.input += inp; cm.output += out; cm.cacheRead += cr; cm.cacheWrite += cw;
+        cm.reasoning += reas; cm.cost += cost; cm.messages += msgs;
+        cm.activeDays.add(day.date);
+        cm.models.add(item.modelId);
+
+        // Model aggregate
+        const mk = `${item.client}::${item.modelId}`;
+        if (!modelMap[mk]) {
+          modelMap[mk] = {
+            client: item.client, model: item.modelId, provider: item.providerId || "unknown",
+            input: 0, output: 0, cacheRead: 0, cacheWrite: 0, reasoning: 0,
+            cost: 0, messageCount: 0, performance: perfLookup[mk] || null
+          };
+        }
+        const mm = modelMap[mk];
+        mm.input += inp; mm.output += out; mm.cacheRead += cr; mm.cacheWrite += cw;
+        mm.reasoning += reas; mm.cost += cost; mm.messageCount += msgs;
+
+        // Monthly aggregate
+        const ym = day.date.slice(0, 7);
+        if (!monthMap[ym]) {
+          monthMap[ym] = {
+            month: ym, input: 0, output: 0, cacheRead: 0, cacheWrite: 0,
+            reasoning: 0, cost: 0, messageCount: 0, activeDays: new Set(), models: new Set()
+          };
+        }
+        const mo = monthMap[ym];
+        mo.input += inp; mo.output += out; mo.cacheRead += cr; mo.cacheWrite += cw;
+        mo.reasoning += reas; mo.cost += cost; mo.messageCount += msgs;
+        mo.activeDays.add(day.date);
+        mo.models.add(item.modelId);
+        if (!mo.modelTotals) mo.modelTotals = {};
+        mo.modelTotals[item.modelId] = (mo.modelTotals[item.modelId] || 0) + inp + cw + out + cr;
+        if (!mo.modelTotals) mo.modelTotals = {};
+        mo.modelTotals[item.modelId] = (mo.modelTotals[item.modelId] || 0) + inp + cw + out + cr;
+      }
+
+      const dTokens = tokenValue({ input: dInput, output: dOutput, cacheRead: dCR, cacheWrite: dCW });
+      let dActiveMs = 0;
+      if (STATE.selectedClients.size === 0) {
+        dActiveMs = day.activeTimeMs || 0;
+      } else if (day.clientActiveMs) {
+        for (const cid of STATE.selectedClients) dActiveMs += (day.clientActiveMs[cid] || 0);
+      } else if (day.totals && day.totals.messages > 0) {
+        dActiveMs = Math.round((day.activeTimeMs || 0) * (dMsgs / day.totals.messages));
+      }
+      if (day.clientActiveMs) {
+        for (const [cid, ms] of Object.entries(day.clientActiveMs)) {
+          if (clientMap[cid]) {
+            clientMap[cid]._custMs = (clientMap[cid]._custMs || 0) + ms;
+            clientMap[cid]._custMaxDayMs = Math.max(clientMap[cid]._custMaxDayMs || 0, ms);
+          }
+        }
+      }
+
+      days.push({
+        date: day.date,
+        input: dInput, output: dOutput, cacheRead: dCR, cacheWrite: dCW, reasoning: dReas,
+        tokens: dTokens,
+        allTokens: dInput + dOutput + dCR + dCW,
+        netTokens: dInput + dOutput + dCW,
+        cost: dCost,
+        messages: dMsgs,
+        activeTimeMs: dActiveMs,
+        items: filteredItems
+      });
+    }
+
+    // Exact active time per client when range matches precomputed buckets
+    let tmMap = null;
+    if (STATE.range === "all") tmMap = RAW_DATA.timeMetricsByRange && RAW_DATA.timeMetricsByRange.all;
+    else if (STATE.range === "30d") tmMap = RAW_DATA.timeMetricsByRange && RAW_DATA.timeMetricsByRange["30d"];
+    else if (STATE.range === "month") tmMap = RAW_DATA.timeMetricsByRange && RAW_DATA.timeMetricsByRange.month;
+    else if (STATE.range === "7d") tmMap = RAW_DATA.timeMetricsByRange && RAW_DATA.timeMetricsByRange["7d"];
+    else if (STATE.range === "custom" && STATE.customTimeMetrics) tmMap = STATE.customTimeMetrics;
+
+    const clientsArr = Object.values(clientMap).map(c => {
+      const tm = (tmMap && tmMap[c.client]) || {};
+      const tot = tokenValue(c);
+      const allTok = c.input + c.output + c.cacheRead + c.cacheWrite;
+      const netTok = c.input + c.output + c.cacheWrite;
+      const denom = c.input + c.cacheWrite + c.cacheRead;
+      return {
+        ...c,
+        activeDaysCount: c.activeDays.size,
+        modelCount: c.models.size,
+        total: tot,
+        allTokens: allTok,
+        netTokens: netTok,
+        cacheHitRate: denom > 0 ? (c.cacheRead / denom) * 100 : 0,
+        activeTimeMs: (tmMap && tmMap[c.client]) ? (tm.total_active_time_ms || 0) : (c._custMs || 0),
+        longestContinuousMs: (tmMap && tmMap[c.client]) ? (tm.longest_continuous_ms || 0) : Math.min(c._custMaxDayMs || 0, (RAW_DATA.timeMetricsByRange?.all?.[c.client]?.longest_continuous_ms || 5400000)),
+        maxConcurrent: (tmMap && tmMap[c.client]) ? (tm.max_concurrent_sessions || 0) : (RAW_DATA.timeMetricsByRange?.all?.[c.client]?.max_concurrent_sessions || 1),
+        sessionCount: (tmMap && tmMap[c.client]) ? (tm.session_count || 0) : Math.max(1, Math.round(c.messages / ((RAW_DATA.meta && RAW_DATA.meta.clientMsgPerSess && RAW_DATA.meta.clientMsgPerSess[c.client]) || 10))),
+        hasExactTime: Boolean(tmMap && tmMap[c.client])
+      };
+    });
+
+    const modelsArr = Object.values(modelMap).map(m => {
+      const tot = tokenValue(m);
+      const allTok = m.input + m.output + m.cacheRead + m.cacheWrite;
+      const netTok = m.input + m.output + m.cacheWrite;
+      const denom = m.input + m.cacheWrite + m.cacheRead;
+      const nonCacheIn = m.input + m.cacheWrite;
+      return {
+        ...m,
+        total: tot,
+        allTokens: allTok,
+        netTokens: netTok,
+        cacheHitRate: denom > 0 ? (m.cacheRead / denom) * 100 : 0,
+        outInRatio: nonCacheIn > 0 ? (m.output / nonCacheIn) : 0,
+        costPer1M: allTok > 0 ? (m.cost / (allTok / 1e6)) : 0
+      };
+    });
+
+    const monthsArr = Object.values(monthMap)
+      .sort((a, b) => b.month.localeCompare(a.month))
+      .map(m => ({
+        ...m,
+        activeDaysCount: m.activeDays.size,
+        modelsList: Array.from(m.models).sort((x, y) => ((m.modelTotals && m.modelTotals[y]) || 0) - ((m.modelTotals && m.modelTotals[x]) || 0)),
+        total: tokenValue(m)
+      }));
+
+    // Hourly 24h distribution
+    const hours24 = Array.from({ length: 24 }, (_, i) => ({
+      hour: i, tokens: 0, cost: 0, messages: 0, clients: new Set(), models: new Set()
+    }));
+    for (const h of (RAW_DATA.hourly || [])) {
+      const dStr = h.h.slice(0, 10);
+      if (since && dStr < since) continue;
+      if (until && dStr > until) continue;
+      if (STATE.selectedClients.size > 0) {
+        const hit = (h.c || []).some(cid => STATE.selectedClients.has(cid));
+        if (!hit) continue;
+      }
+      const hr = parseInt(h.h.slice(11, 13), 10);
+      if (!isNaN(hr) && hr >= 0 && hr < 24) {
+        const val = STATE.metricMode === "net" ? (h.i + h.cw + h.o) : (h.i + h.cw + h.o + h.cr);
+        hours24[hr].tokens += val;
+        hours24[hr].cost += h.cost || 0;
+        hours24[hr].messages += h.n || 0;
+        (h.c || []).forEach(x => hours24[hr].clients.add(x));
+        (h.m || []).forEach(x => hours24[hr].models.add(x));
+      }
+    }
+
+    // Streaks
+    let maxStreak = 0, curStreak = 0, run = 0;
+    const activeSet = new Set(days.filter(d => d.allTokens > 0).map(d => d.date));
+    const sortedDates = Array.from(activeSet).sort();
+    for (let i = 0; i < sortedDates.length; i++) {
+      if (i === 0) {
+        run = 1;
+      } else {
+        const prev = new Date(sortedDates[i - 1] + "T00:00:00");
+        const curr = new Date(sortedDates[i] + "T00:00:00");
+        const diff = Math.round((curr - prev) / 86400000);
+        run = diff === 1 ? run + 1 : 1;
+      }
+      if (run > maxStreak) maxStreak = run;
+    }
+    curStreak = sortedDates.length > 0 ? run : 0;
+
+    // Total active time across selected scope
+    let totalActiveTimeMs = 0;
+    let totalSessions = 0;
+    let longestContMs = 0;
+    if (tmMap) {
+      if (STATE.selectedClients.size === 0 && tmMap["__all__"]) {
+        totalActiveTimeMs = tmMap["__all__"].total_active_time_ms || 0;
+        totalSessions = tmMap["__all__"].session_count || 0;
+        longestContMs = tmMap["__all__"].longest_continuous_ms || 0;
+      } else {
+        for (const c of clientsArr) {
+          totalActiveTimeMs += c.activeTimeMs || 0;
+          totalSessions += c.sessionCount || 0;
+          if ((c.longestContinuousMs || 0) > longestContMs) longestContMs = c.longestContinuousMs;
+        }
+      }
+    } else {
+      totalActiveTimeMs = days.reduce((s, d) => s + d.activeTimeMs, 0);
+      for (const c of clientsArr) {
+        totalSessions += c.sessionCount || 0;
+        if ((c.longestContinuousMs || 0) > longestContMs) longestContMs = c.longestContinuousMs;
+      }
+    }
+
+    return {
+      since, until, days, clientsArr, modelsArr, monthsArr, hours24,
+      activeDaysCount: activeSet.size,
+      maxStreak, curStreak,
+      totalActiveTimeMs, totalSessions, longestContMs,
+      hasExactTime: Boolean(tmMap)
+    };
+  }
+
+  function renderKPIs(f) {
+    const sumAll = f.days.reduce((s, d) => s + d.allTokens, 0);
+    const sumNet = f.days.reduce((s, d) => s + d.netTokens, 0);
+    const sumCR = f.days.reduce((s, d) => s + d.cacheRead, 0);
+    const sumIn = f.days.reduce((s, d) => s + d.input + d.cacheWrite, 0);
+    const sumOut = f.days.reduce((s, d) => s + d.output, 0);
+    const sumCost = f.days.reduce((s, d) => s + d.cost, 0);
+    const sumMsgs = f.days.reduce((s, d) => s + d.messages, 0);
+    const maxDay = f.days.reduce((best, d) => d.cost > best.cost ? d : best, { date: "--", cost: 0, tokens: 0 });
+
+    const mainTokens = STATE.metricMode === "net" ? sumNet : sumAll;
+    const hitRate = (sumIn + sumCR) > 0 ? ((sumCR / (sumIn + sumCR)) * 100).toFixed(1) : "0.0";
+    const avgDayCost = f.activeDaysCount > 0 ? (sumCost / f.activeDaysCount) : 0;
+
+    const kpis = [
+      {
+        title: STATE.metricMode === "net" ? "净新增 Token（不含缓存读）" : "全量 Token 吞吐",
+        badge: `${fmtNum(sumMsgs)} 次调用`,
+        val: fmtCompact(mainTokens),
+        valColor: "var(--teal)",
+        sub: `<span>${STATE.metricMode === "net" ? "全量含缓存" : "净新增"}: <strong>${fmtCompact(STATE.metricMode === "net" ? sumAll : sumNet)}</strong></span>
+              <span>缓存命中: <strong>${hitRate}%</strong></span>
+              <span>纯输出: <strong>${fmtCompact(sumOut)}</strong></span>`
+      },
+      {
+        title: "折合 API 等效成本",
+        badge: "USD 估算",
+        val: fmtCost(sumCost),
+        valColor: "var(--amber)",
+        sub: `<span>日均: <strong>${fmtCost(avgDayCost)}</strong></span>
+              <span>峰值日: <strong>${maxDay.date.slice(5)} (${fmtCost(maxDay.cost)})</strong></span>`
+      },
+      {
+        title: "软件累计活跃时长",
+        badge: f.hasExactTime ? "精确时间戳" : "区间估算",
+        val: fmtDuration(f.totalActiveTimeMs),
+        valColor: "var(--blue)",
+        sub: `<span>总会话: <strong>${fmtNum(f.totalSessions || 0)}</strong></span>
+              <span>最长连续: <strong>${fmtDuration(f.longestContMs)}</strong></span>`
+      },
+      {
+        title: "活跃天数与连续记录",
+        badge: `${f.days.length} 天跨度`,
+        val: `${f.activeDaysCount} 天`,
+        valColor: "var(--green)",
+        sub: `<span>当前连击: <strong>${f.curStreak} 天</strong></span>
+              <span>最长连续: <strong>${f.maxStreak} 天</strong></span>`
+      },
+      {
+        title: "软件与模型覆盖",
+        badge: "本地全扫描",
+        val: `${f.clientsArr.length} 款 / ${new Set(f.modelsArr.map(m => m.model)).size} 模型`,
+        valColor: "var(--violet)",
+        sub: `<span>跨度月份: <strong>${f.monthsArr.length} 个月</strong></span>
+              <span>日均调用: <strong>${fmtNum(f.activeDaysCount > 0 ? Math.round(sumMsgs / f.activeDaysCount) : 0)} 次</strong></span>`
+      }
+    ];
+
+    document.getElementById("kpiGrid").innerHTML = kpis.map(k => `
+      <div class="kpi-card">
+        <div class="kpi-title">
+          <span>${k.title}</span>
+          <span class="badge" style="padding:1px 7px;font-size:11px;">${k.badge}</span>
+        </div>
+        <div class="kpi-value mono" style="color:${k.valColor}">${k.val}</div>
+        <div class="kpi-sub">${k.sub}</div>
+      </div>
+    `).join("");
+  }
+
+  // Heatmap SVG renderer
+  function renderHeatmap(f) {
+    const container = document.getElementById("heatmapContainer");
+    const dayMap = {};
+    for (const d of f.days) dayMap[d.date] = d;
+
+    const palette = HEATMAP_PALETTES[STATE.hmTheme] || HEATMAP_PALETTES.emerald;
+    const legendEl = document.getElementById("heatmapLegend");
+    legendEl.innerHTML = `<span>低</span>` +
+      palette.map(c => `<span class="legend-box" style="background:${c};border:1px solid rgba(255,255,255,0.08)"></span>`).join("") +
+      `<span>高</span>`;
+
+    if (!f.since || !f.until) {
+      container.innerHTML = `<div class="empty-state">
+        <div style="font-size:15px;font-weight:600;color:#e2e8f0;margin-bottom:8px;">尚未扫描本地 AI 使用记录</div>
+        <div>请双击运行同目录下的 <code style="color:var(--teal)">刷新并打开看板.bat</code>（Windows）或在终端执行 <code style="color:var(--teal)">python3 refresh_dashboard.py</code> 自动生成本地统计。</div>
+      </div>`;
+      document.getElementById("heatmapSummaryLine").textContent = "共 0 天有记录";
+      return;
+    }
+
+    const startDate = new Date(f.since + "T00:00:00");
+    const endDate = new Date(f.until + "T00:00:00");
+    // Align grid start to Sunday
+    const gridStart = new Date(startDate);
+    gridStart.setDate(gridStart.getDate() - gridStart.getDay());
+
+    const getVal = d => {
+      if (!d) return 0;
+      if (STATE.hmMetric === "cost") return d.cost;
+      if (STATE.hmMetric === "time") return d.activeTimeMs;
+      return d.tokens;
+    };
+
+    const nonZeroVals = f.days.map(getVal).filter(v => v > 0).sort((a, b) => a - b);
+    const pickQ = r => nonZeroVals.length ? nonZeroVals[Math.min(nonZeroVals.length - 1, Math.floor(nonZeroVals.length * r))] : 0;
+    const q1 = pickQ(0.16), q2 = pickQ(0.34), q3 = pickQ(0.52), q4 = pickQ(0.70), q5 = pickQ(0.87);
+
+    function levelColor(v) {
+      if (!v || v <= 0) return palette[0];
+      if (nonZeroVals.length === 1) return palette[4];
+      if (v <= q1) return palette[1];
+      if (v <= q2) return palette[2];
+      if (v <= q3) return palette[3];
+      if (v <= q4) return palette[4];
+      if (v <= q5) return palette[5];
+      return palette[6];
+    }
+
+    const dayCountSpan = Math.max(1, Math.ceil((endDate - gridStart) / 86400000) + 1);
+    const estCols = Math.ceil(dayCountSpan / 7);
+    const cell = estCols <= 14 ? 22 : estCols <= 40 ? 20 : 14;
+    const gap = 4;
+    const step = cell + gap;
+    const leftPad = 32, topPad = 24;
+    const cells = [];
+    const monthLabels = [];
+    let lastMonth = -1;
+    let col = 0;
+
+    for (let cur = new Date(gridStart); cur <= endDate; cur.setDate(cur.getDate() + 1)) {
+      const dow = cur.getDay();
+      if (dow === 0 && cur > gridStart) col++;
+      const iso = `${cur.getFullYear()}-${String(cur.getMonth() + 1).padStart(2, "0")}-${String(cur.getDate()).padStart(2, "0")}`;
+      if (cur >= startDate) {
+        if (cur.getMonth() !== lastMonth && dow <= 2) {
+          lastMonth = cur.getMonth();
+          monthLabels.push({ x: leftPad + col * step, label: `${cur.getMonth() + 1}月` });
+        }
+        const dObj = dayMap[iso];
+        const val = getVal(dObj);
+        cells.push({
+          x: leftPad + col * step,
+          y: topPad + dow * step,
+          date: iso,
+          color: levelColor(val),
+          data: dObj || null
+        });
+      }
+    }
+
+    const totalCols = col + 1;
+    const width = leftPad + totalCols * step + 16;
+    const height = topPad + 7 * step + 10;
+    const dayNames = ["日", "一", "二", "三", "四", "五", "六"];
+
+    let svg = `<svg class="heatmap-svg" style="min-width:${Math.min(width, 720)}px" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">`;
+    for (let r = 0; r < 7; r++) {
+      if (r % 2 === 1) {
+        svg += `<text x="6" y="${topPad + r * step + cell * 0.72}" fill="#64748b" font-size="11">${dayNames[r]}</text>`;
+      }
+    }
+    for (const m of monthLabels) {
+      svg += `<text x="${m.x}" y="13" fill="#94a3b8" font-size="11">${m.label}</text>`;
+    }
+    for (const c of cells) {
+      const sel = STATE.selectedDay === c.date ? "selected" : "";
+      svg += `<rect class="heatmap-cell ${sel}" x="${c.x}" y="${c.y}" width="${cell}" height="${cell}" rx="3" fill="${c.color}" data-date="${c.date}" />`;
+    }
+    svg += `</svg>`;
+    container.innerHTML = svg;
+
+    const totalVal = f.days.reduce((s, d) => s + getVal(d), 0);
+    const summaryText = STATE.hmMetric === "cost"
+      ? `区间内活跃 ${f.activeDaysCount} 天 · 累计折合 ${fmtCost(totalVal)}`
+      : STATE.hmMetric === "time"
+        ? `区间内活跃 ${f.activeDaysCount} 天 · 累计活跃时长 ${fmtDuration(totalVal)}`
+        : `区间内活跃 ${f.activeDaysCount} 天 · 累计 ${fmtCompact(totalVal)} Tokens`;
+    document.getElementById("heatmapSummaryLine").textContent = summaryText;
+
+    // Bind tooltip & click
+    container.querySelectorAll(".heatmap-cell").forEach(rect => {
+      const dt = rect.dataset.date;
+      const dObj = dayMap[dt];
+      rect.addEventListener("mouseenter", e => showDayTooltip(e, dt, dObj));
+      rect.addEventListener("mousemove", moveTooltip);
+      rect.addEventListener("mouseleave", hideTooltip);
+      rect.addEventListener("click", () => {
+        STATE.selectedDay = STATE.selectedDay === dt ? null : dt;
+        renderHeatmap(f);
+        renderDayDrilldown(dt, dObj);
+      });
+    });
+
+    if (STATE.selectedDay && dayMap[STATE.selectedDay]) {
+      renderDayDrilldown(STATE.selectedDay, dayMap[STATE.selectedDay]);
+    } else if (STATE.selectedDay) {
+      renderDayDrilldown(STATE.selectedDay, null);
+    }
+  }
+
+  function showDayTooltip(e, dateStr, dObj) {
+    const tip = document.getElementById("tooltip");
+    if (!dObj || dObj.allTokens === 0) {
+      tip.innerHTML = `<div class="mono" style="font-weight:700;margin-bottom:4px;">${dateStr}</div><div style="color:var(--text-dim)">当日无记录</div>`;
+    } else {
+      const topItems = [...dObj.items]
+        .sort((a, b) => tokenValue(b.tokens) - tokenValue(a.tokens))
+        .slice(0, 3)
+        .map(it => `<div style="display:flex;justify-content:space-between;gap:10px;margin-top:3px;">
+          <span><span class="dot" style="background:${clientColor(it.client)};margin-right:4px;"></span>${clientName(it.client)} · ${it.modelId}</span>
+          <span class="mono">${fmtCompact(tokenValue(it.tokens))}</span>
+        </div>`).join("");
+      tip.innerHTML = `
+        <div class="mono" style="font-weight:700;color:#f8fafc;margin-bottom:5px;">${dateStr}</div>
+        <div>Token： <strong class="mono" style="color:var(--teal)">${fmtNum(dObj.tokens)}</strong></div>
+        <div>费用 / 时长： <strong class="mono">${fmtCost(dObj.cost)}</strong> · <strong class="mono">${fmtDuration(dObj.activeTimeMs)}</strong></div>
+        <div style="color:var(--text-dim);font-size:11px;margin-top:3px;">Input ${fmtCompact(dObj.input)} / CW ${fmtCompact(dObj.cacheWrite)} / Out ${fmtCompact(dObj.output)} / CR ${fmtCompact(dObj.cacheRead)}</div>
+        ${topItems ? `<div style="border-top:1px solid var(--border);margin-top:6px;padding-top:5px;">${topItems}</div>` : ""}
+      `;
+    }
+    tip.style.opacity = "1";
+    moveTooltip(e);
+  }
+
+  function moveTooltip(e) {
+    const tip = document.getElementById("tooltip");
+    const x = Math.min(window.innerWidth - tip.offsetWidth - 14, e.clientX + 14);
+    const y = Math.min(window.innerHeight - tip.offsetHeight - 14, e.clientY + 14);
+    tip.style.left = Math.max(8, x) + "px";
+    tip.style.top = Math.max(8, y) + "px";
+  }
+
+  function hideTooltip() {
+    document.getElementById("tooltip").style.opacity = "0";
+  }
+
+  function renderDayDrilldown(dateStr, dObj) {
+    const box = document.getElementById("dayDrilldown");
+    if (!STATE.selectedDay) {
+      box.style.display = "none";
+      return;
+    }
+    box.style.display = "block";
+    if (!dObj || !dObj.items || dObj.items.length === 0) {
+      box.innerHTML = `<div class="day-drill-head"><strong class="mono">${dateStr}</strong><button class="pill" onclick="STATE.selectedDay=null;renderAll()">关闭</button></div><div style="color:var(--text-dim)">当日在当前筛选条件下无记录。</div>`;
+      return;
+    }
+    const rows = [...dObj.items].sort((a, b) => tokenValue(b.tokens) - tokenValue(a.tokens));
+    box.innerHTML = `
+      <div class="day-drill-head">
+        <div>
+          <strong class="mono" style="font-size:15px;color:var(--teal);">${dateStr}</strong>
+          <span style="margin-left:10px;color:var(--text-muted);font-size:12.5px;">
+            合计 ${fmtNum(dObj.tokens)} Tokens · ${fmtCost(dObj.cost)} · 活跃时长 ${fmtDuration(dObj.activeTimeMs)} · ${dObj.messages} 次调用
+          </span>
+        </div>
+        <button class="pill" onclick="STATE.selectedDay=null;renderAll()">✕ 收起明细</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>软件</th><th>模型</th><th class="num">Input</th><th class="num">Cache Write</th><th class="num">Output</th><th class="num">Cache Read</th><th class="num">调用数</th><th class="num">费用</th></tr></thead>
+          <tbody>
+            ${rows.map(r => {
+              const tk = r.tokens || {};
+              return `<tr>
+                <td><span class="client-tag"><span class="dot" style="background:${clientColor(r.client)}"></span>${escHtml(clientName(r.client))}</span></td>
+                <td class="mono">${escHtml(r.modelId)}</td>
+                <td class="num mono">${fmtNum(tk.input)}</td>
+                <td class="num mono">${fmtNum(tk.cacheWrite)}</td>
+                <td class="num mono">${fmtNum(tk.output)}</td>
+                <td class="num mono">${fmtNum(tk.cacheRead)}</td>
+                <td class="num mono">${fmtNum(r.messages)}</td>
+                <td class="num mono">${fmtCost(r.cost)}</td>
+              </tr>`;
+            }).join("")}
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  function renderOverviewBars(f) {
+    const byTime = [...f.clientsArr].sort((a, b) => (b.activeTimeMs || 0) - (a.activeTimeMs || 0));
+    const maxTime = Math.max(1, ...byTime.map(c => c.activeTimeMs || 0));
+    document.getElementById("timeRankHint").textContent = f.hasExactTime
+      ? "基于本机各软件会话起止时间戳计算的精确活跃时长"
+      : "基于所选区间内各软件每日活跃记录自动汇总计算";
+
+    document.getElementById("overviewTimeBars").innerHTML = byTime.length === 0
+      ? `<div class="empty-state">暂无数据</div>`
+      : byTime.map(c => {
+        const pct = Math.max(2, (c.activeTimeMs / maxTime) * 100);
+        const hrs = c.activeTimeMs > 0 ? (c.activeTimeMs / 3600000) : 0;
+        const tokPerHr = hrs > 0 ? fmtCompact(c.total / hrs) + "/h" : "--";
+        return `<div>
+          <div class="bar-item-head">
+            <span class="bar-item-title"><span class="dot" style="background:${clientColor(c.client)}"></span>${clientName(c.client)}</span>
+            <span class="mono" style="font-weight:600;color:#f8fafc;">${c.activeTimeMs > 0 ? fmtDuration(c.activeTimeMs) : "需实时计算"}</span>
+          </div>
+          <div class="bar-track">
+            <div class="bar-seg" style="width:${pct}%;background:${clientColor(c.client)};"></div>
+          </div>
+          <div class="bar-meta">
+            <span>会话: ${fmtNum(c.sessionCount)}</span>
+            <span>最长连续: ${fmtDuration(c.longestContinuousMs)}</span>
+            <span>并发峰值: ${c.maxConcurrent || "-"}</span>
+            <span>每小时速率: ${tokPerHr}</span>
+          </div>
+        </div>`;
+      }).join("");
+
+    const byTok = [...f.clientsArr].sort((a, b) => b.total - a.total);
+    const maxTok = Math.max(1, ...byTok.map(c => c.total));
+    document.getElementById("overviewTokenBars").innerHTML = byTok.length === 0
+      ? `<div class="empty-state">暂无数据</div>`
+      : byTok.map(c => {
+        const wTotal = Math.max(2, (c.total / maxTok) * 100);
+        const base = Math.max(1, c.total);
+        const netIn = c.input + c.cacheWrite;
+        const pNetIn = (netIn / base) * wTotal;
+        const pOut = ((c.output) / base) * wTotal;
+        const pCR = STATE.metricMode === "net" ? 0 : ((c.cacheRead) / base) * wTotal;
+        const barTitle = c.cacheWrite > 0
+          ? `蓝=新输入 ${fmtNum(netIn)}（Input ${fmtNum(c.input)} + 建缓存 ${fmtNum(c.cacheWrite)}） · 绿=Output ${fmtNum(c.output)} · 灰=CacheRead ${fmtNum(c.cacheRead)}`
+          : `蓝=新输入 ${fmtNum(netIn)} · 绿=Output ${fmtNum(c.output)} · 灰=CacheRead ${fmtNum(c.cacheRead)}`;
+        const cwNote = c.cacheWrite > 0
+          ? ` <span style="color:var(--text-muted);" title="其中显式建缓存 Cache Write 为 ${fmtNum(c.cacheWrite)}">(含CW ${fmtCompact(c.cacheWrite)})</span>`
+          : "";
+        return `<div>
+          <div class="bar-item-head">
+            <span class="bar-item-title"><span class="dot" style="background:${clientColor(c.client)}"></span>${clientName(c.client)}</span>
+            <span class="mono">${fmtCompact(c.total)} <span style="color:var(--text-dim);font-size:11.5px;">(${fmtCost(c.cost)})</span></span>
+          </div>
+          <div class="bar-track" title="${barTitle}">
+            <div class="bar-seg" style="width:${pNetIn}%;background:#38bdf8;"></div>
+            <div class="bar-seg" style="width:${pOut}%;background:#34d399;"></div>
+            <div class="bar-seg" style="width:${pCR}%;background:#475569;"></div>
+          </div>
+          <div class="bar-meta">
+            <span title="普通输入 ${fmtNum(c.input)} + 显式建缓存 ${fmtNum(c.cacheWrite)}">新输入 ${fmtCompact(netIn)}${cwNote}</span>
+            <span>Out ${fmtCompact(c.output)}</span>
+            <span>CR ${fmtCompact(c.cacheRead)} (${c.cacheHitRate.toFixed(1)}%)</span>
+          </div>
+        </div>`;
+      }).join("");
+
+    // 24h Rhythm
+    const maxHr = Math.max(1, ...f.hours24.map(h => h.tokens));
+    const peak = f.hours24.reduce((b, h) => h.tokens > b.tokens ? h : b, { hour: 0, tokens: 0 });
+    document.getElementById("peakHourBadge").textContent = `高峰时段: ${String(peak.hour).padStart(2, "0")}:00 (${fmtCompact(peak.tokens)})`;
+    document.getElementById("hourlyChart").innerHTML = f.hours24.map(h => {
+      const pct = h.tokens > 0 ? Math.max(4, (h.tokens / maxHr) * 100) : 2;
+      const tipText = `${String(h.hour).padStart(2, "0")}:00 时段 | ${fmtCompact(h.tokens)} Tokens | ${fmtCost(h.cost)} | ${h.messages} 次消息`;
+      return `<div class="hour-col" title="${tipText}">
+        <div class="hour-bar" style="height:${pct}%;"></div>
+        <span class="hour-lbl">${String(h.hour).padStart(2, "0")}</span>
+      </div>`;
+    }).join("");
+  }
+
+  function renderClientsTab(f) {
+    const cols = [
+      { key: "client", label: "AI 软件", num: false },
+      { key: "activeTimeMs", label: "活跃时长", num: true },
+      { key: "sessionCount", label: "会话数", num: true },
+      { key: "longestContinuousMs", label: "最长连续", num: true },
+      { key: "maxConcurrent", label: "最高并发", num: true },
+      { key: "messages", label: "调用消息", num: true },
+      { key: "input", label: "Input", num: true },
+      { key: "cacheWrite", label: "Cache Write", num: true },
+      { key: "output", label: "Output", num: true },
+      { key: "cacheRead", label: "Cache Read", num: true },
+      { key: "cacheHitRate", label: "缓存命中率", num: true },
+      { key: "total", label: STATE.metricMode === "net" ? "净新增合计" : "全量合计", num: true },
+      { key: "cost", label: "等效费用", num: true }
+    ];
+
+    const rows = [...f.clientsArr].sort((a, b) => {
+      const k = STATE.clientSort.key;
+      const va = a[k] ?? 0, vb = b[k] ?? 0;
+      if (typeof va === "string") return va.localeCompare(vb) * STATE.clientSort.dir;
+      return (va - vb) * STATE.clientSort.dir;
+    });
+
+    const thead = `<thead><tr>${cols.map(c => `<th class="${c.num ? "num" : ""}" onclick="sortClients('${c.key}')">${c.label} ${STATE.clientSort.key === c.key ? (STATE.clientSort.dir > 0 ? "↑" : "↓") : ""}</th>`).join("")}</tr></thead>`;
+    const tbody = `<tbody>${rows.map(r => `<tr>
+      <td><span class="client-tag"><span class="dot" style="background:${clientColor(r.client)}"></span>${clientName(r.client)}</span></td>
+      <td class="num mono" style="color:var(--blue);font-weight:600;">${r.activeTimeMs > 0 ? fmtDuration(r.activeTimeMs) : "—"}</td>
+      <td class="num mono">${fmtNum(r.sessionCount)}</td>
+      <td class="num mono">${fmtDuration(r.longestContinuousMs)}</td>
+      <td class="num mono">${r.maxConcurrent || "—"}</td>
+      <td class="num mono">${fmtNum(r.messages)}</td>
+      <td class="num mono">${fmtNum(r.input)}</td>
+      <td class="num mono">${fmtNum(r.cacheWrite)}</td>
+      <td class="num mono">${fmtNum(r.output)}</td>
+      <td class="num mono">${fmtNum(r.cacheRead)}</td>
+      <td class="num mono">${r.cacheHitRate.toFixed(1)}%</td>
+      <td class="num mono" style="font-weight:700;color:var(--teal);">${fmtNum(r.total)}</td>
+      <td class="num mono" style="color:var(--amber);">${fmtCost(r.cost)}</td>
+    </tr>`).join("")}</tbody>`;
+    document.getElementById("clientsTable").innerHTML = thead + tbody;
+  }
+
+  function sortClients(k) {
+    if (STATE.clientSort.key === k) STATE.clientSort.dir *= -1;
+    else { STATE.clientSort.key = k; STATE.clientSort.dir = -1; }
+    renderClientsTab(computeFiltered());
+  }
+
+  function setModelChartMetric(m) {
+    STATE.modelChartMetric = m;
+    document.getElementById("mChartTok").classList.toggle("active", m === "tokens");
+    document.getElementById("mChartCost").classList.toggle("active", m === "cost");
+    document.getElementById("mChartOut").classList.toggle("active", m === "output");
+    renderModelsTab(computeFiltered());
+  }
+
+  function renderModelsTab(f) {
+    // Top 15 model chart
+    const getMetricVal = m => {
+      if (STATE.modelChartMetric === "cost") return m.cost;
+      if (STATE.modelChartMetric === "output") return m.output;
+      return m.total;
+    };
+    const top15 = [...f.modelsArr].sort((a, b) => getMetricVal(b) - getMetricVal(a)).slice(0, 20);
+    const maxV = Math.max(1e-9, ...top15.map(getMetricVal));
+    document.getElementById("modelCompareBars").innerHTML = top15.length === 0
+      ? `<div class="empty-state">当前筛选条件下暂无模型数据</div>`
+      : top15.map(m => {
+        const v = getMetricVal(m);
+        const pct = Math.max(2, (v / maxV) * 100);
+        const labelVal = STATE.modelChartMetric === "cost" ? fmtCost(v) : fmtCompact(v);
+        return `<div>
+          <div class="bar-item-head">
+            <span class="bar-item-title">
+              <span class="dot" style="background:${clientColor(m.client)}"></span>
+              <span class="mono">${m.model}</span>
+              <span class="badge" style="padding:1px 7px;font-size:11px;">${clientName(m.client)} · ${m.provider}</span>
+            </span>
+            <span class="mono" style="font-weight:600;">${labelVal}</span>
+          </div>
+          <div class="bar-track">
+            <div class="bar-seg" style="width:${pct}%;background:${clientColor(m.client)};"></div>
+          </div>
+          <div class="bar-meta">
+            <span>缓存命中 ${m.cacheHitRate.toFixed(1)}%</span>
+            <span>输出/新输入比 ${m.outInRatio.toFixed(2)}x</span>
+            <span>费用 ${fmtCost(m.cost)}</span>
+            <span>速度 ${fmtSpeed(m.performance?.msPer1KTokens)}</span>
+          </div>
+        </div>`;
+      }).join("");
+
+    renderModelsTable(f);
+  }
+
+  function renderModelsTable(fOpt) {
+    const f = fOpt || computeFiltered();
+    const q = (document.getElementById("modelSearch").value || "").trim().toLowerCase();
+    const prov = document.getElementById("modelProviderFilter").value;
+
+    let rows = f.modelsArr.filter(m => {
+      if (prov && m.provider !== prov) return false;
+      if (q && !m.model.toLowerCase().includes(q) && !m.provider.toLowerCase().includes(q) && !clientName(m.client).toLowerCase().includes(q)) return false;
+      return true;
+    });
+
+    const k = STATE.modelSort.key;
+    rows.sort((a, b) => {
+      const va = k === "speed" ? (a.performance?.msPer1KTokens ?? 999999) : (a[k] ?? 0);
+      const vb = k === "speed" ? (b.performance?.msPer1KTokens ?? 999999) : (b[k] ?? 0);
+      if (typeof va === "string") return va.localeCompare(vb) * STATE.modelSort.dir;
+      return (va - vb) * STATE.modelSort.dir;
+    });
+
+    const cols = [
+      { key: "model", label: "模型", num: false },
+      { key: "client", label: "所属软件", num: false },
+      { key: "provider", label: "厂商", num: false },
+      { key: "input", label: "Input", num: true },
+      { key: "cacheWrite", label: "Cache Write", num: true },
+      { key: "output", label: "Output", num: true },
+      { key: "cacheRead", label: "Cache Read", num: true },
+      { key: "cacheHitRate", label: "缓存命中", num: true },
+      { key: "outInRatio", label: "输出/输入比", num: true },
+      { key: "speed", label: "生成速率", num: true },
+      { key: "total", label: "合计 Token", num: true },
+      { key: "cost", label: "等效费用", num: true },
+      { key: "costPer1M", label: "$/1M", num: true }
+    ];
+
+    const thead = `<thead><tr>${cols.map(c => `<th class="${c.num ? "num" : ""}" onclick="sortModels('${c.key}')">${c.label} ${STATE.modelSort.key === c.key ? (STATE.modelSort.dir > 0 ? "↑" : "↓") : ""}</th>`).join("")}</tr></thead>`;
+    const tbody = `<tbody>${rows.map(r => `<tr>
+      <td class="mono" style="font-weight:600;max-width:230px;overflow:hidden;text-overflow:ellipsis;" title="${escHtml(r.model)}">${escHtml(r.model)}</td>
+      <td><span class="client-tag"><span class="dot" style="background:${clientColor(r.client)}"></span>${escHtml(clientName(r.client))}</span></td>
+      <td style="color:var(--text-muted);max-width:110px;overflow:hidden;text-overflow:ellipsis;" title="${escHtml(r.provider)}">${escHtml(r.provider)}</td>
+      <td class="num mono">${fmtNum(r.input)}</td>
+      <td class="num mono">${fmtNum(r.cacheWrite)}</td>
+      <td class="num mono" style="color:var(--green);">${fmtNum(r.output)}</td>
+      <td class="num mono" style="color:var(--text-muted);">${fmtNum(r.cacheRead)}</td>
+      <td class="num mono">${r.cacheHitRate.toFixed(1)}%</td>
+      <td class="num mono">${r.outInRatio.toFixed(2)}x</td>
+      <td class="num mono">${fmtSpeed(r.performance?.msPer1KTokens)}</td>
+      <td class="num mono" style="font-weight:700;color:var(--teal);">${fmtNum(r.total)}</td>
+      <td class="num mono" style="color:var(--amber);">${fmtCost(r.cost)}</td>
+      <td class="num mono" style="color:var(--text-dim);">${r.costPer1M > 0 ? "$" + r.costPer1M.toFixed(2) : "—"}</td>
+    </tr>`).join("")}</tbody>`;
+    document.getElementById("modelsTable").innerHTML = thead + tbody;
+  }
+
+  function sortModels(k) {
+    if (STATE.modelSort.key === k) STATE.modelSort.dir *= -1;
+    else { STATE.modelSort.key = k; STATE.modelSort.dir = -1; }
+    renderModelsTable();
+  }
+
+  function renderTimelineTab(f) {
+    const maxM = Math.max(1, ...f.monthsArr.map(m => m.total));
+    document.getElementById("monthlyBars").innerHTML = f.monthsArr.map(m => `
+      <div>
+        <div class="bar-item-head">
+          <span class="bar-item-title mono">${m.month} <span style="color:var(--text-dim);font-weight:400;font-size:12px;">(${m.activeDaysCount} 活跃天 · ${m.modelsList.length} 模型)</span></span>
+          <span class="mono">${fmtCompact(m.total)} · <strong style="color:var(--amber)">${fmtCost(m.cost)}</strong></span>
+        </div>
+        <div class="bar-track">
+          <div class="bar-seg" style="width:${Math.max(2, (m.total / maxM) * 100)}%;background:linear-gradient(90deg,var(--teal),var(--blue));"></div>
+        </div>
+      </div>
+    `).join("");
+
+    document.getElementById("monthlyTable").innerHTML = `
+      <thead><tr><th>月份</th><th class="num">活跃天</th><th class="num">调用次数</th><th class="num">Input</th><th class="num">Cache Write</th><th class="num">Output</th><th class="num">Cache Read</th><th class="num">合计 Token</th><th class="num">费用</th><th>主要模型</th></tr></thead>
+      <tbody>${f.monthsArr.map(m => `<tr>
+        <td class="mono" style="font-weight:600;">${m.month}</td>
+        <td class="num mono">${m.activeDaysCount}</td>
+        <td class="num mono">${fmtNum(m.messageCount)}</td>
+        <td class="num mono">${fmtNum(m.input)}</td>
+        <td class="num mono">${fmtNum(m.cacheWrite)}</td>
+        <td class="num mono">${fmtNum(m.output)}</td>
+        <td class="num mono">${fmtNum(m.cacheRead)}</td>
+        <td class="num mono" style="color:var(--teal);font-weight:700;">${fmtNum(m.total)}</td>
+        <td class="num mono" style="color:var(--amber);">${fmtCost(m.cost)}</td>
+        <td style="max-width:340px;overflow:hidden;text-overflow:ellipsis;color:var(--text-muted);" title="${m.modelsList.join(", ")}">${m.modelsList.slice(0, 5).join(", ")}${m.modelsList.length > 5 ? ` +${m.modelsList.length - 5}` : ""}</td>
+      </tr>`).join("")}</tbody>
+    `;
+
+    renderDailyTable(f);
+  }
+
+  function renderDailyTable(fOpt) {
+    const f = fOpt || computeFiltered();
+    const q = (document.getElementById("dailySearch").value || "").trim().toLowerCase();
+    const rows = [...f.days].filter(d => d.allTokens > 0).reverse().filter(d => {
+      if (!q) return true;
+      if (d.date.includes(q)) return true;
+      return d.items.some(it => it.modelId.toLowerCase().includes(q) || clientName(it.client).toLowerCase().includes(q));
+    });
+
+    document.getElementById("dailyTable").innerHTML = `
+      <thead><tr><th>日期</th><th class="num">活跃时长</th><th class="num">调用数</th><th class="num">Input</th><th class="num">Cache Write</th><th class="num">Output</th><th class="num">Cache Read</th><th class="num">合计 Token</th><th class="num">费用</th><th>涉及软件</th></tr></thead>
+      <tbody>${rows.slice(0, 150).map(d => {
+        const cls = Array.from(new Set(d.items.map(i => clientName(i.client))));
+        return `<tr style="cursor:pointer;" onclick="STATE.selectedDay='${d.date}';switchTab('overview');renderAll();">
+          <td class="mono" style="font-weight:600;color:var(--teal);">${d.date}</td>
+          <td class="num mono">${fmtDuration(d.activeTimeMs)}</td>
+          <td class="num mono">${fmtNum(d.messages)}</td>
+          <td class="num mono">${fmtNum(d.input)}</td>
+          <td class="num mono">${fmtNum(d.cacheWrite)}</td>
+          <td class="num mono">${fmtNum(d.output)}</td>
+          <td class="num mono">${fmtNum(d.cacheRead)}</td>
+          <td class="num mono" style="font-weight:700;">${fmtNum(d.tokens)}</td>
+          <td class="num mono" style="color:var(--amber);">${fmtCost(d.cost)}</td>
+          <td>${cls.map(n => `<span class="badge" style="padding:1px 6px;margin-right:4px;">${n}</span>`).join("")}</td>
+        </tr>`;
+      }).join("")}</tbody>
+    `;
+  }
+
+  function renderProjectsTable() {
+    const q = (document.getElementById("projectSearch").value || "").trim().toLowerCase();
+    const list = (RAW_DATA.workspaces || []).filter(w => {
+      if (!isClientSelected(w.client)) return false;
+      if (q && !(w.workspaceLabel || "").toLowerCase().includes(q) && !(w.model || "").toLowerCase().includes(q)) return false;
+      return true;
+    });
+
+    document.getElementById("projectsTable").innerHTML = `
+      <thead><tr><th>项目 / 工作区目录</th><th>软件</th><th>模型</th><th class="num">调用数</th><th class="num" title="Input + Cache Write">新输入</th><th class="num">Output</th><th class="num">Cache Read</th><th class="num">合计 Token</th><th class="num">费用</th></tr></thead>
+      <tbody>${list.length === 0 ? `<tr><td colspan="9" class="empty-state">暂无匹配的项目工作区记录</td></tr>` : list.map(w => {
+        const tot = tokenValue(w);
+        const netIn = (w.input || 0) + (w.cacheWrite || 0);
+        const inTitle = (w.cacheWrite || 0) > 0 ? `Input ${fmtNum(w.input)} + CW ${fmtNum(w.cacheWrite)}` : "";
+        const rawTitle = STATE.privacyMode ? maskWorkspace(w.workspaceLabel, w.workspaceKey) : (w.workspaceKey || w.workspaceLabel);
+        const dispName = maskWorkspace(w.workspaceLabel, w.workspaceKey);
+        return `<tr>
+          <td class="mono" style="max-width:340px;overflow:hidden;text-overflow:ellipsis;" title="${escHtml(rawTitle)}">${escHtml(dispName)}</td>
+          <td><span class="client-tag"><span class="dot" style="background:${clientColor(w.client)}"></span>${escHtml(clientName(w.client))}</span></td>
+          <td class="mono">${escHtml(w.model)}</td>
+          <td class="num mono">${fmtNum(w.messageCount)}</td>
+          <td class="num mono" ${inTitle ? `title="${inTitle}"` : ""}>${fmtNum(netIn)}</td>
+          <td class="num mono">${fmtNum(w.output)}</td>
+          <td class="num mono">${fmtNum(w.cacheRead)}</td>
+          <td class="num mono" style="font-weight:700;color:var(--teal);">${fmtNum(tot)}</td>
+          <td class="num mono" style="color:var(--amber);">${fmtCost(w.cost)}</td>
+        </tr>`;
+      }).join("")}</tbody>
+    `;
+  }
+
+  function setHeatmapMetric(m) {
+    STATE.hmMetric = m;
+    document.getElementById("hmModeTokens").classList.toggle("active", m === "tokens");
+    document.getElementById("hmModeCost").classList.toggle("active", m === "cost");
+    document.getElementById("hmModeTime").classList.toggle("active", m === "time");
+    renderHeatmap(computeFiltered());
+  }
+
+  function setHeatmapTheme(t) {
+    STATE.hmTheme = t;
+    renderHeatmap(computeFiltered());
+  }
+
+  function switchTab(tab) {
+    STATE.activeTab = tab;
+    document.querySelectorAll(".tab-btn").forEach(b => b.classList.toggle("active", b.dataset.tab === tab));
+    document.querySelectorAll(".tab-panel").forEach(p => p.classList.toggle("active", p.id === "tab-" + tab));
+  }
+
+  function renderAll() {
+    const resetBtn = document.getElementById("resetFilterBtn");
+    if (resetBtn) {
+      resetBtn.style.display = (STATE.range !== "all" || STATE.selectedClients.size > 0 || STATE.selectedDay) ? "inline-flex" : "none";
+    }
+    const f = computeFiltered();
+    renderKPIs(f);
+    renderHeatmap(f);
+    renderOverviewBars(f);
+    renderClientsTab(f);
+    renderModelsTab(f);
+    renderTimelineTab(f);
+    renderProjectsTable();
+  }
+
+  function exportFilteredCsv() {
+    const f = computeFiltered();
+    const lines = ["\uFEFFDate,Client,Model,Provider,Input,CacheWrite,Output,CacheRead,Messages,CostUSD"];
+    for (const d of f.days) {
+      for (const it of d.items) {
+        const tk = it.tokens || {};
+        lines.push([
+          d.date,
+          `"${clientName(it.client)}"`,
+          `"${it.modelId}"`,
+          `"${it.providerId || ""}"`,
+          tk.input || 0,
+          tk.cacheWrite || 0,
+          tk.output || 0,
+          tk.cacheRead || 0,
+          it.messages || 0,
+          (it.cost || 0).toFixed(6)
+        ].join(","));
+      }
+    }
+    const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `token_usage_${f.since}_to_${f.until}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast("已导出 UTF-8-SIG 格式 CSV（Excel 打开无乱码）");
+  }
+
+  initFilters();
+  renderAll();
+</script>
+</body>
+</html>
