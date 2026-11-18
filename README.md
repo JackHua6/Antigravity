@@ -57,19 +57,7 @@
 
 ---
 
-## 📊 附带开源工具：`token-dashboard/` AI Token 工作台看板
-
-仓库新增独立子项目 [**`token-dashboard/`**](token-dashboard/README.md)（零隐私开源模板），可一键扫描你本机的 **Antigravity、Claude Code、Codex、Cursor、Windsurf、WorkBuddy、Trae、ZCode、Qoder、豆包工作 (DouBaoWork)** 等 60+ AI 工具日志，生成单文件深色交互式数据看板：
-- **Windows**：双击 [`token-dashboard/刷新并打开看板.bat`](token-dashboard/刷新并打开看板.bat)
-- **macOS / Linux**：运行 `cd token-dashboard && chmod +x refresh.sh && ./refresh.sh`
-- 支持 6 级消费热力图、全量 vs 净新增口径、全部预设/自定义区间精确活跃时长、分软件 24h 节律及 **一键隐私脱敏（`🙈 隐私脱敏`）**。详见 [`token-dashboard/README.md`](token-dashboard/README.md)。
-
----
-
 ## 🕒 版本演进简史
-
-- **2026-11-18（新增 `token-dashboard/` 开源单文件 AI Token 看板）**：
-  收录通用跨平台本地 AI 用量看板（`refresh_dashboard.py` + `刷新并打开看板.bat` + `refresh.sh` + `token_dashboard.html`），已脱敏个人日志与本机路径，新增 `本月`/自定义区间精准活跃时长、6 级热力深浅梯度、分软件 24 小时独立统计、Top 20 模型剖析、XSS 防护与一键隐私脱敏开关。
 
 - **2026-11-17（v5.2.2 · 上下文水位线动态适配）**：
   1. **动态上下文上限自适应（修复 512K 模型显示超 100% Bug）**：移除写死的 `256000` 上限，直接解析会话 SQLite 中 `ContextWindowMetadata.max_context_tokens` 真实上限（支持 Gemini 4 Hydrogen 的 `512k`、Flash/Argon 的 `256k`、Claude 的 `160k`/`840k` 等按调用实时跟随，默认兜底 `512k`）；
