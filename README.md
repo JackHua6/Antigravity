@@ -1,74 +1,103 @@
-# JackHua's Antigravity 汉化、字体与主题增强版 (v5.2.2 · 完美适配 Antigravity 2.32.1+)
+# JackHua's Antigravity 主题、字体与汉化增强版 (v5.5.1 · 同步船板最新版 & 适配 Antigravity 2.33.0+)
 
-[![Version](https://img.shields.io/badge/version-5.2.2-7A1F1A.svg)](https://github.com/JackHua6/Antigravity)
-[![Antigravity](https://img.shields.io/badge/Antigravity-2.32.1%2B-D97757.svg)](https://github.com/JackHua6/Antigravity)
+[![Version](https://img.shields.io/badge/version-5.5.1-7A1F1A.svg)](https://github.com/JackHua6/Antigravity)
+[![Antigravity](https://img.shields.io/badge/Antigravity-2.33.0%2B-D97757.svg)](https://github.com/JackHua6/Antigravity)
 [![Node](https://img.shields.io/badge/node-%3E%3D22.0.0%20(22.13%2B%20Full)-339933.svg)](https://nodejs.org/)
 [![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-lightgrey.svg)](https://github.com/JackHua6/Antigravity)
 
-> **本项目基于 [Anarcadia/chuanban-antigravity-theme-patch](https://github.com/Anarcadia/chuanban-antigravity-theme-patch) 进行二次开发与深度增强。**  
-> 针对原版在日常使用中的三大核心痛点（**“客户端退出重启后变回英文”**、**“Windows 白底输入框鼠标工字光标发白隐形”** 与 **“静态 256K 上下文水位线导致 512K 模型显示超 100%”**），独创了双启动联合守护机制、标准色彩自适应工字光标与动态模型上下文水位线识别，并补全了近百条新版词条（**990+ 条深度汉化**），提供开箱即用、无感常驻的母语级 Antigravity 体验。
+> **本项目基于上游 [Anarcadia/chuanban-antigravity-theme-patch](https://github.com/Anarcadia/chuanban-antigravity-theme-patch) (`v5.5.1`) 同步构建并附加 JackHua 专属增强**：
+> - 完整集成上游 `v5.5.1` 全部能力：**Antigravity `2.33.0+` 单图标 M1+M2 零侵入 CDP 启动接力**、`Google Sans Flex` 可变字体引擎 × 更纱黑体字重桥接、Claude 暖纸深夜预设 (`claude-warm`) 与外观面板 **📖 书卷切换钮**、多路分屏/`/btw`/子 Agent 侧栏独立遥测胶囊、动态上下文上限识别与 TDZ 崩溃修复；
+> - 叠加 JackHua 专属优化：**Windows DWM 白底输入框鼠标工字光标 (I-beam) 标准防隐形修复**（1px 原生细度，白天纯黑/黑夜纯白）、**1,919 条扩展深度汉化词典**（在上游 1,860 条基础上额外补全远程控制二维码、WSL 与浏览器安全警示等 59 条高频词条）、以及一键离线修复脚本 `重新汉化.bat` 与旧版 `LaunchAntigravity.vbs` 快捷方式自动无缝迁移。
+
+> 供 AI Agent 读取的完整部署与改装技术契约位于仓库根目录 **[`SKILL.md`](https://github.com/JackHua6/Antigravity/blob/main/SKILL.md)**。
 
 ---
 
-## 🌟 JackHua 增强版五大核心突破（v5.2.2 专属优化）
+## 🔗 资源入口
 
-| 核心增强功能 | 原版常见痛点 | 本版（v5.2.2）解决方案 |
+| 入口 | 地址 | 说明 |
 | :--- | :--- | :--- |
-| **1. 客户端退出重启自动保持中文** | 原版依赖常开命令行或容易随客户端退出被 Windows 作业树强杀；每次完全退出或关机重启后变回英文，需要用户反复敲命令或手动重新汉化。 | **独创 Windows 快捷方式“双启动联合守护”架构**：安装时自动感知并劫持修复桌面（含 OneDrive 桌面）与开始菜单快捷方式（保留官方原生高清图标）。每次正常双击图标打开 Antigravity，后台自动在 0 秒内静默核验并拉起守护进程，**实现日常退出重启、关机开机 100% 自动保持中文**！ |
-| **2. 白底输入框鼠标工字型 (I-beam) 标准防隐形** | Windows DWM 硬件加速与 Chromium 反色机制冲突：白底输入卡片下鼠标工字光标经常被错误渲染成“纯白色”，在白底框内移动完全看不清光标位置。 | **系统标准默认粗细 + 强制 `color-scheme` 色彩自适应**：彻底去除过粗过宽的自定义图形遮挡，采用 100% 系统标准默认大小与细度的工字指针（1px 纤细主干），并通过精准声明 `color-scheme` 与 `caret-color` 锁定白天纯黑、黑夜纯白，点选字与字之间精准绝不遮挡。 |
-| **3. 512K / 多模型上下文水位线自适应** | 原版写死静态 `256k` 上限；当新版本/新模型（如 Gemini 4 Hydrogen）提升至 `512K` 时，指标胶囊与压缩水位线会显示诸如 `483k/256k (189%) · 距压缩余 0`。 | **Protobuf 原生模型上限动态识别**：直接从会话 SQLite 的 `ContextWindowMetadata` 实时读取当前模型的真实 `max_context_tokens`（自动识别 `512k`、`256k`、`160k`、`840k` 等不同模型窗口，默认兜底 `512k`），百分比与剩余额度 100% 精准。 |
-| **4. 新版全功能深度汉化补全（990+ 词条）** | 官方近期版本新推功能（如远程控制、二维码扫码连接、WSL 切换、浏览器内嵌安全拦截等）在旧版补丁中大量出现英文残留。 | **全量补齐官方近期新版特性词条**：全面覆盖「远程控制 (Remote Control)」、「设备名称 (Device Name)」、「复制链接/扫码在远程控制中打开」、「适用于 Linux 的 Windows 子系统 (WSL)」、「内置浏览器内嵌限制与私密连接警示」等近百条高频界面词汇，总词条扩充至 990+ 条！ |
-| **5. 智能唤醒指令与离线 `重新汉化.bat`** | 官方大版本更新覆盖核心文件后，用户往往需要去翻看文档输入复杂安装参数。 | **多层自愈容灾体系**：根目录预置一键免配置批处理 `重新汉化.bat`，双击 2 秒内恢复；同时在 `SKILL.md` 中绑定高频短语，在客户端对话框直接发「重新汉化」或「修复汉化」，Agent 即自动静默完成修复。 |
+| **1. 本项目 GitHub 代码仓库（JackHua 增强版）** | [**JackHua6/Antigravity**](https://github.com/JackHua6/Antigravity) | 同步上游 `v5.5.1` 全部内核并叠加 Windows 工字光标防隐形、1,919 条扩展汉化与 `重新汉化.bat`（含 [`SKILL.md`](https://github.com/JackHua6/Antigravity/blob/main/SKILL.md)）。 |
+| **2. Google Drive 资源包（含字体）** | [**Google Drive 共享文件夹**](https://drive.google.com/drive/folders/1NX92SgVUqtSjWg6bt6sIJXy-cn7J_boC) | 含 4 个必备字体文件：`AnthropicSerif-Regular/Bold.ttf`、`AnthropicMono-Regular.ttf`、`Sarasa-SuperTTC.ttc`（`v5.5.0` UI 西文已直连官方 `Google Sans Flex`，无需 `AnthropicSans`）。若 `Sarasa-SuperTTC.ttc` 遇网盘 24h 下载限流，macOS 可用 `brew install --cask font-sarasa-gothic`，Windows/Linux 可从 [`be5invis/Sarasa-Gothic` Releases](https://github.com/be5invis/Sarasa-Gothic/releases) 获取。 |
+| **3. 上游原版项目致敬** | [**Anarcadia/chuanban-antigravity-theme-patch**](https://github.com/Anarcadia/chuanban-antigravity-theme-patch) | 感谢船板原作者持续迭代的黄金内核与配色引擎。 |
 
 ---
 
-## 🔗 核心资源链接
+## 🖼️ 实机效果
 
-| 端点名称 | 链接地址 | 定位与包含内容 |
-| :--- | :--- | :--- |
-| **1. 本项目 GitHub 代码库** | [**JackHua6/Antigravity**](https://github.com/JackHua6/Antigravity) | **增强版成品代码与安装器**。包含已修复光标与重启守护的 `core/`、改装层 `user/`、一键安装器 `install.mjs` 及 Agent 专属 `SKILL.md`。 |
-| **2. Google Drive 字体包（必下）** | [**Google Drive 官方共享文件夹**](https://drive.google.com/drive/folders/1NX92SgVUqtSjWg6bt6sIJXy-cn7J_boC) | 内置 **Anthropic 官方原版字体族**（`Anthropic Sans` / `Anthropic Serif` / `Anthropic Mono`）与 **更纱黑体超集**（`Sarasa-SuperTTC.ttc`）。 |
-| **3. 上游原版项目致敬** | [**Anarcadia/chuanban-antigravity-theme-patch**](https://github.com/Anarcadia/chuanban-antigravity-theme-patch) | 感谢船板原作者提供的优秀黄金内核基础与配色灵感。 |
+### 1. 标准浅色主界面：高对比书卷暖白工作台 + 衬线正文与活字润墨 + 暗红蜡封输入框
+> 左侧 `#F7F5F0` 暖燕麦侧栏（`Google Sans Flex` × 更纱黑体 UI 字重桥接）+ `#FCFCFB` 微暖亮白对话区与 Markdown 预览（`Anthropic Serif` × `Sarasa Mono Slab SC` 衬线）+ 底部 `1.5px` 暗红蜡封输入框与同行实时指标胶囊。
 
----
+![标准浅色书卷暖白主界面视图](assets/preview-light-workbench.png)
 
-## 🖼️ 实机样式演示
+### 2. 黑夜界面效果：Claude 暖纸深夜模式（`claude-warm`）+ 代码审阅 Diff 视图
+> `#242320` 暖炭底色 + `#1B1A18` 深炭侧栏 + `#F3F0E4` 象牙白正文 + `#D97757` 陶土暖橙点缀；在「系统设置 → 外观界面」点击 **📖 / 🌙** 按钮即可在「暖纸深夜」与「官方冷碳黑（`onyx`）」之间 `0ms` 切换并自动持久化。
 
-### 1. 三栏工作台：高对比暖纸主题 + 古朴暗红蜡封输入框 + 同行实时指标胶囊 + 黑色工字型光标
-![三栏对话与工件阅读视图](assets/preview-workspace-chat-and-artifact.png)
+![黑夜界面 Claude 暖纸深夜与代码审阅视图](assets/preview-dark-workbench.png)
 
-### 2. 新建对话首页：全界面深度汉化 + 聚焦浮现淡雅暗红蜡封外框
-![新建对话首页视图](assets/preview-home-new-conversation.png)
+### 3. 上下文对话信息胶囊与悬停遥测详情卡
+> 嵌入输入框底栏的实时指标胶囊（支持多路平铺分屏、`/btw` 支线提问与子 Agent 侧栏独立计量）；悬停展开本轮流式/端到端 `tok/s`、`TTFT`、思考链与正文输出拆分，以及当前会话累计压缩水位线与缓存命中率。
 
----
-
-## 🚀 极简部署与日常使用指南
-
-### 一、新用户一键安装（推荐直接发给 AI Agent）
-1. **下载安装字体**：从 [**Google Drive 全套资源包**](https://drive.google.com/drive/folders/1NX92SgVUqtSjWg6bt6sIJXy-cn7J_boC) 下载字体解压安装，并确保本机已安装 **Node.js `>= 22.0.0`**（推荐 `>= 22.13.0`）。
-2. **复制发给你的 AI Agent（Antigravity / Claude Code / Codex / Cursor 等）**：
-
-> **💬 复制发给 Agent（一键安装）**：  
-> 请帮我克隆 `https://github.com/JackHua6/Antigravity.git`，严格按照仓库内的 `SKILL.md` 执行 `node install.mjs doctor` 和 `node install.mjs install`，帮我一键部署好该增强版汉化补丁并完成快捷方式守卫与光标增强配置。
-
-### 二、日常使用体验
-- **日常关闭与重新打开**：无需任何额外操作，直接双击桌面原版 Antigravity 图标启动，**100% 自动保持中文**。
-- **未来版本升级容灾**：若客户端大版本更新覆盖了内部配置，双击本地目录的 `重新汉化.bat`，或在客户端对话框中对 Agent 发送 **“重新汉化”**，即可 2 秒自动恢复。
+![上下文对话实时信息胶囊与悬停遥测详情卡](assets/preview-metrics-capsule.png)
 
 ---
 
-## 🕒 版本演进简史
+## ✨ 核心特性（v5.5.1）
 
-- **2026-11-17（v5.2.2 · 上下文水位线动态适配）**：
-  1. **动态上下文上限自适应（修复 512K 模型显示超 100% Bug）**：移除写死的 `256000` 上限，直接解析会话 SQLite 中 `ContextWindowMetadata.max_context_tokens` 真实上限（支持 Gemini 4 Hydrogen 的 `512k`、Flash/Argon 的 `256k`、Claude 的 `160k`/`840k` 等按调用实时跟随，默认兜底 `512k`）；
-  2. **自动配置迁移**：`install.mjs install` 自动将旧版 `user/config.json` 中遗留的静态 `256000` 迁移为 `"auto"`。
-- **2026-11-12（v5.2.1 · 新版功能深度汉化补全）**：
-  词条总数扩充至 990+ 条，补全远程控制 (Remote Control)、设备名称、WSL、内置浏览器安全提示与步骤确认等新功能界面。
-- **2026-11-12（v5.2.0 · JackHua 增强版首发）**：
-  1. **首创 Windows 快捷方式双启动联合守护（`LaunchAntigravity.vbs`）**：彻底解决客户端退出重启变回英文的体验缺陷，安装时自动感知并绑定桌面与开始菜单快捷方式，开机/重启客户端 100% 自动保持中文；
-  2. **首创 Chromium DWM 白底工字型光标 (I-beam) 标准防隐形**：恢复系统标准默认粗细与大小的工字指针（1px 纤细主干），通过上下文色彩方案强制声明，彻底根治白底输入框中鼠标光标发白隐形的问题，白天纯黑、黑夜纯白，点选文字精准不遮挡；
-  3. **新增一键离线修复脚本 `重新汉化.bat` 与全场景智能短指令触发**。
-- **2026-11-11（v5.1.4 原版）**：
-  修复实时指标胶囊运行态同行稳定化与 `flex-col` 越界溢出。
-- **2026-11-11（v5.1.3 原版）**：
-  适配 Antigravity 2.31.0 Worktree、900条汉化词典、SQLite O(1) 增量遥测与 WeakMap 隔离缓存。
+- **昼夜双模式与四套配色预设**：浅色内置高对比暖白（默认）、ClaudeDesktop 净白、复古羊皮纸三套暖纸预设及 macOS 浅色全域活字润墨；深色在客户端外观面板原生嵌入 **📖 书卷按钮**（`[ 🖥️ | ☀️ | 📖 | 🌙 ]`），一键切换官方碳黑（`onyx`）或 Claude 暖纸深夜（`claude-warm`），自动同步 Windows 原生标题栏、启动幕布与 `Swarm` 协作子帧。
+- **四层中西文排版与字重桥接**：UI 西文直连官方 `Google Sans Flex` 可变字体引擎（`wght 350–650`, `wdth 92`，内置 `#ag-google-sans-flex-fonts` 防脱靶保底），中文经 `AgSarasaUI` 精确映射更纱黑体字重（消除 `350` 字重落入 `Light` 发虚与 Windows `FontLink` 微软雅黑替换）；对话正文与 Markdown 保持 `Anthropic Serif` + `Sarasa Mono Slab SC` 衬线（含 Windows `DirectWrite` 子节点 `wght 400/500/600` 还原）；代码与终端采用 `Anthropic Mono` 等宽；主输入框采用打字机板状粗衬线配三态蜡封边框。
+- **1,860 条界面汉化与代码区严格隔离**：覆盖主界面、15+ 设置子页、快捷键方案、内置浏览器管理、`Swarm` 蜂群面板与模型档位动态文案；全词表通过大小写与弯直引号零碰撞校验，基于 `WeakMap` 追踪英文原词支持热还原，严格隔离代码块、Monaco 编辑器、终端及英文历史对话标题。
+- **SQLite `O(1)` 增量实时指标胶囊**：基于 Node.js `>= 22.13` 原生 `node:sqlite` 增量游标（兼容本地会话库与 Windows WSL2 默认发行版双轨只读读取），在分屏、`/btw` 与子 Agent 标签页各自独立展示 `tok/s`、`TTFT`、动态识别的真实模型上下文上限（`256k`–`1M+`）、子 Agent 全树消耗汇总（`+N sub`）与缓存命中率。
+- **零侵入单图标启动接力与 `2.5s` 热重载架构**：针对 Antigravity `2.33.0+` 默认移除调试端口的变更，保持双端**唯一官方原版图标**（Windows/Linux 原地幂等修补快捷方式参数，全平台守护进程在冷启动 `<=12s` / 更新重启 `<=25s` 自动无感补挂 `--remote-debugging-port=0`，对存量活跃会话 100% 豁免保护），并通过宿主独占指纹门禁豁免内置浏览器本地预览页；`core/` 只读内核与 `user/` 个人配置层物理分离，升级不覆盖个人修改，修改 `user/*` 保存后 `2.5s` 自动热生效。
+
+---
+
+## 🚀 安装、升级与日常定制
+
+### 一、新用户首次安装
+1. **环境准备**：安装 **Node.js `>= 22.0.0`**（推荐 **`>= 22.13.0`** 以启用实时指标胶囊），并从 [**Google Drive 资源包**](https://drive.google.com/drive/folders/1NX92SgVUqtSjWg6bt6sIJXy-cn7J_boC) 下载上述 4 个字体文件（可先放在下载目录，直接让下方 Agent 一键完成注册安装）。
+2. **复制以下引导词发给你的 AI Agent（Antigravity / Claude Code / Codex / Cursor 等）**：
+
+> **💬 复制发给 Agent（新用户一键安装）**：  
+> 请帮我克隆 `https://github.com/Anarcadia/chuanban-antigravity-theme-patch.git`（或读取我已下载解压的补丁目录），先完整阅读仓库内的 `SKILL.md`，再按以下顺序部署并处理边缘情况：  
+> 1. 若本机有 `nvm` / `fnm` / `volta`，优先切换至 `Node >= 22.13.0` 执行命令；运行 `node install.mjs doctor` 检查 `fonts.allRequiredInstalled`。  
+> 2. 若缺少字体（需 `Anthropic Serif`、`Anthropic Mono`、`Sarasa-SuperTTC.ttc`）：先在我刚下载的目录中查找并用 `node install.mjs install-fonts --from <字体目录>` 一键安装（Windows 下必须用此命令写入注册表，勿仅手动复制文件；若缺 `Sarasa-SuperTTC.ttc` 且遇网盘限流，macOS 可直接执行 `brew install --cask font-sarasa-gothic`，Windows/Linux 引导我从 `be5invis/Sarasa-Gothic` Releases 下载）。  
+> 3. 运行 `node install.mjs install` 完成安装（注：macOS 默认单图标模式 `launcherInstalled: false` 属正常设计）。  
+> 4. 检查输出中的 `cdpStatus`：若为 `"missing_opt_in_flag"`（Antigravity `2.33.0+` 尚未挂调试端口），**如果你当前正在 Antigravity 内部对话中运行，请勿执行 `--force` 强行重启自断会话**，只需把空闲时执行的命令 `node ~/.gemini/antigravity/theme-patch/install.mjs relaunch`（Windows 为 `node "$HOME\.gemini\antigravity\theme-patch\install.mjs" relaunch`，或提示我直接手动退出重开一次 Antigravity）发给我；如果你在外部独立终端运行且客户端空闲，请直接执行 `node install.mjs relaunch`。  
+> 5. 在端口就绪后运行 `node install.mjs verify`，确认 `"ok": true` 且 `"hasStyle": true` 即完成验收。
+
+### 二、老用户升级至 v5.5.1
+`node install.mjs install` 会自动备份旧版 `core/` 内核、更新系统常驻服务，并完整保留 `~/.gemini/antigravity/theme-patch/user/` 中的个人配置：
+
+> **💬 复制发给 Agent（老用户无缝升级）**：  
+> 请帮我拉取最新的 `https://github.com/Anarcadia/chuanban-antigravity-theme-patch.git`（或读取最新解压目录），阅读其中的 `SKILL.md` 后直接运行 `node install.mjs install` 升级至 `v5.5.1`（若我此前使用的是更早期的单文件版 `antigravity-font-daemon.mjs` 且有自定义字号/配色，请先帮我把自定义项迁移到 `~/.gemini/antigravity/theme-patch/user/`）。若安装后 `cdpStatus` 为 `"missing_opt_in_flag"` 且你正在 Antigravity 内部会话中运行，请勿直接中断当前对话，告诉我空闲时运行 `node ~/.gemini/antigravity/theme-patch/install.mjs relaunch`（或手动重开一次客户端）即可；端口已就绪则直接运行 `node install.mjs verify` 验收。
+
+### 三、后续个性化调整与排障话术
+- **🎨 切换昼夜预设、调整字号或微调样式**：
+  > 请按 `~/.gemini/antigravity/theme-patch/SKILL.md` 规范，仅修改 `user/` 目录下的配置文件：把白天预设改为 `"claude-desktop-purewhite"`（或 `"vintage-deep"`） / 把黑夜预设 `"darkPreset"` 改为 `"claude-warm"` / 把对话正文字号 `"--ag-chat-font-size"` 调为 `"16.5px"`。
+- **🇨🇳 自定义修改或补充汉化词条**：
+  > 请在 `~/.gemini/antigravity/theme-patch/user/i18n.override.json` 中新增或覆盖词条 `"英文原词": "自定义中文"`，确认 2.5 秒内页面实时热更新生效。
+- **🔍 故障定界与一键回滚**：
+  > 请按 `~/.gemini/antigravity/theme-patch/SKILL.md` 依次运行 `node install.mjs doctor` 和 `node install.mjs verify --safe-mode` 排查是否为 `user/` 自定义层冲突；如需退回上一版本请运行 `node install.mjs rollback`。
+  - *注：若客户端冷启动后偶发未显示 `Remote`（远程）入口，属官方 `language_server` 冷启动兜底包竞态（补丁已内置空输入态自动自愈；若启动瞬间正在输入触发了草稿保护，按 `Cmd/Ctrl + Shift + R` 刷新一次即可恢复）。*
+
+---
+
+## 🕒 版本演进（完整记录见 [`CHANGELOG.md`](CHANGELOG.md)）
+
+- **v5.5.1（2026-11-19 · 现行版）**
+  - 修复 `user/config.json` 自定义非默认 `contextLimit` / `contextLimitOverride`（如 `512000`）时守护进程在启动加载阶段触发 `lastBestEffortPayloadCache` 暂时性死区（TDZ）崩溃退出的问题（合入 [@2217173240](https://github.com/2217173240) [#18](https://github.com/Anarcadia/chuanban-antigravity-theme-patch/pull/18)）。
+- **v5.5.0（2026-11-19）**
+  - 适配 **Antigravity `2.33.0`**（macOS × Windows 11 双端真机验收）：落地单图标纯净模式 + `M1 + M2` 零侵入 CDP 启动接力（Windows `.lnk` / Linux `.desktop` 原地幂等打标、macOS 默认单图标零冗余、`relaunch` 子命令、冷启动 `<=12s` / 更新重启 `<=25s` 自动补参接力、Windows `0.02ms` 内存级空闲短路、`sidecar_sdk` 伴生进程过滤及活跃会话 100% 保护）与 `doctor` `missing_opt_in_flag` 诊断；UI 西文切换至官方 `Google Sans Flex` 可变字体引擎（含 `#ag-google-sans-flex-fonts` 防脱靶保底）× `AgSarasaUI` 更纱黑体字重桥接，保留正文 `Anthropic Serif`（含 Windows `DirectWrite` 子节点 `wght 400/500/600` 还原）；新增 macOS 浅色全域活字润墨与 UI 字重微平衡（Windows 零改动）；补齐无 `data-newux-theme` 选择器并将词典扩充至 `1,860` 条。
+- **v5.4.3（2026-11-18）**
+  - 适配 Antigravity `2.32.2` 与 `Gemini 4 Carbon` 模型矩阵（词典 `1,790` 条）；新增多路平铺分屏、`/btw` 支线提问与子 Agent 侧栏标签页独立实时指标胶囊及窄分屏动态折行（合入 [@CaramelizedCUDA](https://github.com/CaramelizedCUDA) [#17](https://github.com/Anarcadia/chuanban-antigravity-theme-patch/pull/17) 修复 [#16](https://github.com/Anarcadia/chuanban-antigravity-theme-patch/issues/16)）；加固 Swarm 子帧 `darkPreset` `<1ms` 瞬时同步、修复 `coldBootHealer` 二次复检自锁、隔离英文历史对话标题，并升级 macOS 中文标题外挂悬浮告警卡「一键复制修复命令」与守护日志自截断保护。
+- **v5.4.2（2026-11-17）**：打通主窗口至 `plugin://swarm--` 子帧的实时深浅色中继与零闪白预置，消除双向切换下的子帧主题失步（[#15](https://github.com/Anarcadia/chuanban-antigravity-theme-patch/pull/15)）。
+- **v5.4.1（2026-11-17）**：在「系统设置 → 外观界面 → 主题模式」胶囊中嵌入原生 **📖 书卷按钮**，支持 `0ms` 一键切换「Claude 暖纸深夜」并自动落盘记忆。
+- **v5.4.0（2026-11-16）**：新增 `claude-warm` 暖纸深夜预设（[#13](https://github.com/Anarcadia/chuanban-antigravity-theme-patch/issues/13)）、内置浏览器本地预览页豁免门禁（[#12](https://github.com/Anarcadia/chuanban-antigravity-theme-patch/pull/12)）、Windows WSL2 SQLite 双轨只读读取（[#10](https://github.com/Anarcadia/chuanban-antigravity-theme-patch/issues/10)）与中完整性计划任务自启锁（[#8](https://github.com/Anarcadia/chuanban-antigravity-theme-patch/issues/8)）。
+- **v5.3.0（2026-11-15）**：支持子 Agent 全树消耗汇总 `+N sub`（[#7](https://github.com/Anarcadia/chuanban-antigravity-theme-patch/pull/7)）、动态识别模型真实上下文窗口上限（[#6](https://github.com/Anarcadia/chuanban-antigravity-theme-patch/pull/6)），并完成 `2.32.1` 双平台适配（`1,740` 条词典）。
+- **v5.2.0（2026-11-14）**：适配 Antigravity `2.32.0`，完成全词库系统性去机翻重构与 6 项核心术语统一（`1,630` 条）。
+- **v5.1.8（2026-11-14）**：新增冷启动内嵌兜底包零流量安全自愈机制，解决偶发丢失 `Remote` 远程入口问题。
+- **v5.1.6（2026-11-13）**：适配 Antigravity `2.31.2`，打通 `Swarm` 子帧注入、原生幕布底色同步与防双倍缩放。
+- **v5.1.3（2026-11-11）**：适配 Antigravity `2.31.0`，将 SQLite 指标读取与 DOM 汉化升级为 `O(1)` 增量引擎。
+- **v5.1.0（2026-11-10）**：确立浅色暖纸预设与深色官方碳黑物理隔离的昼夜双模式架构。
+- **v5.0.0（2026-11-04）**：确立「`core/` 只读内核 + `user/` `2.5s` 热重载改装层 + `install.mjs` 一键 CLI」模块化架构。
