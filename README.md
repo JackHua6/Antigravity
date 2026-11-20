@@ -1,13 +1,17 @@
-# JackHua's Antigravity 主题、字体与汉化增强版 (v5.5.1 · 同步船板最新版 & 适配 Antigravity 2.33.0+)
+# JackHua's Antigravity 主题、字体与汉化增强版 (v5.6.0 · 双通道自动更新提醒 & 适配 Antigravity 2.33.0+)
 
-[![Version](https://img.shields.io/badge/version-5.5.1-7A1F1A.svg)](https://github.com/JackHua6/Antigravity)
+[![Version](https://img.shields.io/badge/version-5.6.0-7A1F1A.svg)](https://github.com/JackHua6/Antigravity)
 [![Antigravity](https://img.shields.io/badge/Antigravity-2.33.0%2B-D97757.svg)](https://github.com/JackHua6/Antigravity)
 [![Node](https://img.shields.io/badge/node-%3E%3D22.0.0%20(22.13%2B%20Full)-339933.svg)](https://nodejs.org/)
 [![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-lightgrey.svg)](https://github.com/JackHua6/Antigravity)
 
 > **本项目基于上游 [Anarcadia/chuanban-antigravity-theme-patch](https://github.com/Anarcadia/chuanban-antigravity-theme-patch) (`v5.5.1`) 同步构建并附加 JackHua 专属增强**：
 > - 完整集成上游 `v5.5.1` 全部能力：**Antigravity `2.33.0+` 单图标 M1+M2 零侵入 CDP 启动接力**、`Google Sans Flex` 可变字体引擎 × 更纱黑体字重桥接、Claude 暖纸深夜预设 (`claude-warm`) 与外观面板 **📖 书卷切换钮**、多路分屏/`/btw`/子 Agent 侧栏独立遥测胶囊、动态上下文上限识别与 TDZ 崩溃修复；
-> - 叠加 JackHua 专属优化：**Windows DWM 白底输入框鼠标工字光标 (I-beam) 标准防隐形修复**（1px 原生细度，白天纯黑/黑夜纯白）、**1,919 条扩展深度汉化词典**（在上游 1,860 条基础上额外补全远程控制二维码、WSL 与浏览器安全警示等 59 条高频词条）、以及一键离线修复脚本 `重新汉化.bat` 与旧版 `LaunchAntigravity.vbs` 快捷方式自动无缝迁移。
+> - 叠加 JackHua 专属优化：
+>   - **双通道自动更新提醒 + 一键安全升级（`v5.6.0` 新增）**：在线态每 12h 静默检测新版并在客户端右下角弹出轻量更新卡（点击「立即一键更新」自动 SHA-256 校验覆盖升级）；当 Antigravity 大版本更新导致 CDP 断连失效时，后台守护进程自动弹出 **Windows / macOS 原生系统弹窗** 提示一键修复与重启接力（24h 防打扰冷却，支持 `raw.githubusercontent.com` + `jsDelivr` 双源回退，也可运行 `node install.mjs update` 手动升级）；
+>   - **Windows DWM 白底输入框鼠标工字光标 (I-beam) 标准防隐形修复**（1px 原生细度，白天纯黑/黑夜纯白）；
+>   - **1,919 条扩展深度汉化词典**（在上游 1,860 条基础上额外补全远程控制二维码、WSL 与浏览器安全警示等 59 条高频词条）；
+>   - 一键离线修复脚本 `重新汉化.bat` 与旧版 `LaunchAntigravity.vbs` 快捷方式自动无缝迁移。
 
 > 供 AI Agent 读取的完整部署与改装技术契约位于仓库根目录 **[`SKILL.md`](https://github.com/JackHua6/Antigravity/blob/main/SKILL.md)**。
 

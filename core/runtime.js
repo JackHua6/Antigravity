@@ -106,7 +106,7 @@
     }
   }
 
-  const PATCH_VERSION = boot.version || '20261119-v5.5.1';
+  const PATCH_VERSION = boot.version || '20261120-v5.6.0';
   const DETECTED_OS =
     boot.platform || (/Win/i.test(navigator.platform || '') ? 'win32' : /Mac/i.test(navigator.platform || '') ? 'darwin' : 'linux');
   const ENABLED = boot.enabled !== false;
@@ -4321,6 +4321,96 @@
       window.__ag_body_ready = true;
     };
     window.addEventListener('DOMContentLoaded', window.__ag_dcl_handler, { once: true });
+  }
+
+  // ============================================================================
+  // 4.8 客户端内轻量更新提示卡 (#ag-update-toast，由 daemon.mjs 远端版本检测驱动)
+  // ============================================================================
+  if (!IS_SWARM_PLUGIN_FRAME) {
+    window.__ag_set_update_state = function (state) {
+      try {
+        const existing = document.getElementById('ag-update-toast');
+        if (!ENABLED || !state || !state.hasUpdate) {
+          if (existing) existing.remove();
+          return;
+        }
+        if (!document.body) return;
+        let card = existing;
+        if (!card) {
+          card = document.createElement('div');
+          card.id = 'ag-update-toast';
+          card.setAttribute('data-ag-no-i18n', '1');
+          document.body.appendChild(card);
+        }
+        const localVer = String(state.localVersion || '').replace(/^v/i, '');
+        const remoteVer = String(state.remoteVersion || '').replace(/^v/i, '');
+        const notes = String(state.releaseNotes || '');
+        const updating = Boolean(state.updating);
+        const errMsg = String(state.error || '');
+
+        card.innerHTML = '';
+        const hdr = document.createElement('div');
+        hdr.className = 'ag-upd-hdr';
+        const titleEl = document.createElement('span');
+        titleEl.className = 'ag-upd-title';
+        titleEl.textContent = `汉化补丁有新版本 v${remoteVer}`;
+        const closeBtn = document.createElement('button');
+        closeBtn.type = 'button';
+        closeBtn.className = 'ag-upd-close';
+        closeBtn.title = '本次暂不提醒';
+        closeBtn.textContent = '×';
+        closeBtn.addEventListener('click', () => card.remove());
+        hdr.appendChild(titleEl);
+        hdr.appendChild(closeBtn);
+        card.appendChild(hdr);
+
+        const sub = document.createElement('div');
+        sub.className = 'ag-upd-sub';
+        sub.textContent = localVer ? `当前版本 v${localVer}${notes ? ' · ' + notes : ''}` : notes;
+        card.appendChild(sub);
+
+        if (errMsg) {
+          const errEl = document.createElement('div');
+          errEl.className = 'ag-upd-err';
+          errEl.textContent = `更新失败：${errMsg}`;
+          card.appendChild(errEl);
+        }
+
+        const actions = document.createElement('div');
+        actions.className = 'ag-upd-actions';
+
+        const updateBtn = document.createElement('button');
+        updateBtn.type = 'button';
+        updateBtn.className = 'ag-upd-btn-primary';
+        updateBtn.disabled = updating;
+        updateBtn.textContent = updating ? '正在校验并更新...' : '立即一键更新';
+        updateBtn.addEventListener('click', () => {
+          if (typeof window.__agTriggerSelfUpdate === 'function') {
+            try {
+              window.__agTriggerSelfUpdate(remoteVer);
+            } catch (e) {}
+          }
+        });
+
+        const ignoreBtn = document.createElement('button');
+        ignoreBtn.type = 'button';
+        ignoreBtn.className = 'ag-upd-btn-ghost';
+        ignoreBtn.disabled = updating;
+        ignoreBtn.textContent = '忽略此版本';
+        ignoreBtn.addEventListener('click', () => {
+          card.remove();
+          if (typeof window.__agDismissUpdate === 'function') {
+            try {
+              window.__agDismissUpdate(remoteVer);
+            } catch (e) {}
+          }
+        });
+
+        actions.appendChild(updateBtn);
+        actions.appendChild(ignoreBtn);
+        card.appendChild(actions);
+      } catch (e) {}
+    };
   }
 
   // ============================================================================

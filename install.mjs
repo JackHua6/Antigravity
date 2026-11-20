@@ -36,6 +36,10 @@ process.emitWarning = function (warning, ...rest) {
 const GOOGLE_DRIVE_URL = 'https://drive.google.com/drive/folders/1NX92SgVUqtSjWg6bt6sIJXy-cn7J_boC';
 const NOTION_GUIDE_URL = 'https://chuanban.notion.site/chuanban-antigravity-theme-patch-db7c5846f37546be9481cd791aed0554';
 const GITHUB_REPO_URL = 'https://github.com/JackHua6/Antigravity';
+const UPDATE_MIRRORS = [
+  'https://raw.githubusercontent.com/JackHua6/Antigravity/main',
+  'https://cdn.jsdelivr.net/gh/JackHua6/Antigravity@main'
+];
 
 const ALLOWED_ORIGINS = [
   'http://127.0.0.1',
@@ -116,8 +120,9 @@ function buildManifest(baseDir = __dirname) {
     };
   }
   const manifest = {
-    name: 'chuanban-antigravity-theme-patch',
-    version: '5.5.1',
+    name: 'jackhua-antigravity-theme-patch',
+    version: '5.6.0',
+    releaseNotes: '新增双通道自动更新提醒（窗内优雅提示卡 + 失效时系统原生弹窗）与一键安全自动升级',
     minNodeVersion: '22.0.0',
     fullMetricsNodeVersion: '22.13.0',
     distribution: {
@@ -1970,6 +1975,7 @@ async function runInstall() {
     'coldBootHealer',
     'zoomShortcuts',
     'cdpAutoRelaunch',
+    'updateCheck',
     'customCss',
     'customJs'
   ]) {
@@ -2599,6 +2605,241 @@ async function runUninstall() {
   console.log('[Uninstall] Stopped daemon, removed autostart services & CDP launchers, and unloaded live styles. User config in ~/.gemini/antigravity/theme-patch/user/ is preserved.');
 }
 
+function compareSemver(a, b) {
+  const pa = String(a || '0.0.0')
+    .replace(/^v/i, '')
+    .split(/[-+]/)[0]
+    .split('.')
+    .map((n) => parseInt(n, 10) || 0);
+  const pb = String(b || '0.0.0')
+    .replace(/^v/i, '')
+    .split(/[-+]/)[0]
+    .split('.')
+    .map((n) => parseInt(n, 10) || 0);
+  const len = Math.max(pa.length, pb.length, 3);
+  for (let i = 0; i < len; i++) {
+    const va = pa[i] || 0;
+    const vb = pb[i] || 0;
+    if (va > vb) return 1;
+    if (va < vb) return -1;
+  }
+  return 0;
+}
+
+async function fetchUrlBuffer(url, timeoutMs = 8000) {
+  const res = await fetch(url, {
+    signal: AbortSignal.timeout(timeoutMs),
+    headers: { 'User-Agent': 'jackhua-antigravity-theme-patch/5.6.0' }
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return Buffer.from(await res.arrayBuffer());
+}
+
+async function fetchRemoteManifest() {
+  const errors = [];
+  for (const baseUrl of UPDATE_MIRRORS) {
+    const bust = baseUrl.includes('raw.githubusercontent.com') ? `?t=${Date.now()}` : '';
+    const url = `${baseUrl}/core/manifest.json${bust}`;
+    try {
+      const buf = await fetchUrlBuffer(url, 6000);
+      const manifest = JSON.parse(buf.toString('utf8').replace(/^\uFEFF/, ''));
+      if (manifest && manifest.version && manifest.files && typeof manifest.files === 'object') {
+        return { manifest, baseUrl, rawBuffer: buf };
+      }
+      errors.push(`${baseUrl}: invalid manifest schema`);
+    } catch (err) {
+      errors.push(`${baseUrl}: ${err && err.message ? err.message : String(err)}`);
+    }
+  }
+  return { manifest: null, baseUrl: null, errors };
+}
+
+async function downloadRepoFile(relPath, preferredBase) {
+  const bases = preferredBase
+    ? [preferredBase, ...UPDATE_MIRRORS.filter((u) => u !== preferredBase)]
+    : UPDATE_MIRRORS;
+  let lastErr = null;
+  for (const baseUrl of bases) {
+    const bust = baseUrl.includes('raw.githubusercontent.com') ? `?t=${Date.now()}` : '';
+    try {
+      return await fetchUrlBuffer(`${baseUrl}/${relPath}${bust}`, 15000);
+    } catch (err) {
+      lastErr = err;
+    }
+  }
+  throw lastErr || new Error(`Failed to download ${relPath}`);
+}
+
+async function runUpdate() {
+  const checkOnly = hasFlag('--check');
+  const force = hasFlag('--force');
+  const shouldRelaunch = hasFlag('--relaunch');
+  const targetDir = path.resolve(getArg('--target-dir', resolveDefaultTargetDir()));
+  const localManifestPath = path.join(targetDir, 'core', 'manifest.json');
+  const fallbackManifestPath = path.join(__dirname, 'core', 'manifest.json');
+  const activeManifestPath = fs.existsSync(localManifestPath) ? localManifestPath : fallbackManifestPath;
+  let localVersion = '0.0.0';
+  try {
+    if (fs.existsSync(activeManifestPath)) {
+      localVersion = JSON.parse(fs.readFileSync(activeManifestPath, 'utf8').replace(/^\uFEFF/, '')).version || '0.0.0';
+    }
+  } catch {}
+
+  const remote = await fetchRemoteManifest();
+  if (!remote.manifest) {
+    console.log(
+      JSON.stringify(
+        {
+          ok: false,
+          error: 'Failed to fetch remote manifest from all mirrors',
+          localVersion,
+          details: remote.errors
+        },
+        null,
+        2
+      )
+    );
+    process.exitCode = 1;
+    return;
+  }
+
+  const remoteVersion = String(remote.manifest.version || '0.0.0');
+  const releaseNotes = String(remote.manifest.releaseNotes || '');
+  const hasUpdate = compareSemver(remoteVersion, localVersion) > 0;
+
+  if (checkOnly) {
+    console.log(
+      JSON.stringify(
+        {
+          ok: true,
+          hasUpdate,
+          localVersion,
+          remoteVersion,
+          releaseNotes,
+          source: remote.baseUrl
+        },
+        null,
+        2
+      )
+    );
+    return;
+  }
+
+  if (!hasUpdate && !force) {
+    console.log(
+      JSON.stringify(
+        {
+          ok: true,
+          updated: false,
+          upToDate: true,
+          localVersion,
+          remoteVersion,
+          releaseNotes,
+          source: remote.baseUrl
+        },
+        null,
+        2
+      )
+    );
+    return;
+  }
+
+  const stagingDir = path.join(os.tmpdir(), `ag-patch-update-${Date.now()}-${process.pid}`);
+  try {
+    fs.mkdirSync(path.join(stagingDir, 'core'), { recursive: true });
+    fs.mkdirSync(path.join(stagingDir, 'user'), { recursive: true });
+    fs.writeFileSync(path.join(stagingDir, 'core', 'manifest.json'), remote.rawBuffer);
+
+    // 1. 下载并逐文件 SHA-256 严格校验 core/* 内核文件
+    for (const [name, meta] of Object.entries(remote.manifest.files)) {
+      const buf = await downloadRepoFile(`core/${name}`, remote.baseUrl);
+      const rawHash = crypto.createHash('sha256').update(buf).digest('hex');
+      let matched = rawHash === meta.sha256;
+      if (!matched) {
+        const lfBuf = Buffer.from(buf.toString('utf8').replace(/\r\n/g, '\n'), 'utf8');
+        matched = crypto.createHash('sha256').update(lfBuf).digest('hex') === meta.sha256;
+      }
+      if (!matched) {
+        throw new Error(`SHA-256 mismatch for core/${name}: expected ${meta.sha256}, got ${rawHash}`);
+      }
+      fs.writeFileSync(path.join(stagingDir, 'core', name), buf);
+    }
+
+    // 2. 下载安装器、文档与默认 user 模板（install 阶段绝不覆盖用户已有 user/ 文件）
+    for (const rel of ['install.mjs', 'README.md', 'SKILL.md', 'user/config.json', 'user/custom.css', 'user/custom.js', 'user/i18n.override.json']) {
+      try {
+        const buf = await downloadRepoFile(rel, remote.baseUrl);
+        fs.writeFileSync(path.join(stagingDir, rel), buf);
+      } catch (err) {
+        if (rel === 'install.mjs') throw err;
+      }
+    }
+
+    // 3. 调用新版 install.mjs 执行原子备份、内核安装、快捷方式修补与守护进程重启
+    const installRes = spawnSync(
+      process.execPath,
+      [path.join(stagingDir, 'install.mjs'), 'install', '--target-dir', targetDir],
+      {
+        encoding: 'utf8',
+        windowsHide: true,
+        timeout: 60000
+      }
+    );
+    if (installRes.status !== 0) {
+      throw new Error(`Staging install failed (exit ${installRes.status}): ${(installRes.stderr || installRes.stdout || '').trim()}`);
+    }
+
+    // 4. 若指定 --relaunch，则平滑接力重启 Antigravity 使补丁立即生效
+    let relaunchRan = false;
+    if (shouldRelaunch) {
+      const relaunchArgs = [path.join(targetDir, 'install.mjs'), 'relaunch', '--target-dir', targetDir];
+      if (force) relaunchArgs.push('--force');
+      const rRes = spawnSync(process.execPath, relaunchArgs, {
+        encoding: 'utf8',
+        windowsHide: true,
+        timeout: 45000
+      });
+      relaunchRan = rRes.status === 0;
+    }
+
+    console.log(
+      JSON.stringify(
+        {
+          ok: true,
+          updated: true,
+          fromVersion: localVersion,
+          toVersion: remoteVersion,
+          releaseNotes,
+          source: remote.baseUrl,
+          targetDir,
+          relaunchRan
+        },
+        null,
+        2
+      )
+    );
+  } catch (err) {
+    console.log(
+      JSON.stringify(
+        {
+          ok: false,
+          updated: false,
+          error: err && err.message ? err.message : String(err),
+          localVersion,
+          remoteVersion
+        },
+        null,
+        2
+      )
+    );
+    process.exitCode = 1;
+  } finally {
+    try {
+      fs.rmSync(stagingDir, { recursive: true, force: true });
+    } catch {}
+  }
+}
+
 // ============================================================================
 // 4. 路由分发
 // ============================================================================
@@ -2619,6 +2860,9 @@ switch (subcommand) {
   case 'install':
     await runInstall();
     break;
+  case 'update':
+    await runUpdate();
+    break;
   case 'relaunch':
     await runRelaunch();
     break;
@@ -2637,6 +2881,7 @@ switch (subcommand) {
   default:
     console.log(`Usage:
   node install.mjs install       [--channel auto|stable|insiders] [--preset high-contrast|claude-desktop-purewhite|vintage-deep] [--dark-preset onyx|claude-warm] [--sync-user] [--with-launcher]
+  node install.mjs update        [--check] [--force] [--relaunch]
   node install.mjs relaunch      [--channel auto|stable|insiders] [--force]
   node install.mjs install-fonts --from <font-folder-path>
   node install.mjs doctor        [--channel auto|stable|insiders]

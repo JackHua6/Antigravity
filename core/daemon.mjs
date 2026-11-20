@@ -288,7 +288,7 @@ function resolveActiveChannelEndpoints(channelMode = 'auto', userCfg = {}) {
 // ============================================================================
 // 2. 动态构建注入载荷（支持 core/ + user/ 实时合并与热更新签名）
 // ============================================================================
-const BASE_VERSION = '20261119-v5.5.1';
+const BASE_VERSION = '20261120-v5.6.0';
 let cachedBundleSig = '';
 let cachedInjectScript = '';
 let cachedPatchVersion = '';
@@ -297,6 +297,7 @@ const metricsCache = new Map(); // dbPath -> { sig, payload }
 // Must be declared before the top-level rebuildBundleIfNeeded() call: it clears this cache
 // when user/config.json contextLimit differs from the default, which would otherwise hit the TDZ.
 const lastBestEffortPayloadCache = new Map(); // dbPath -> payload
+let currentUpdateBannerState = null; // { hasUpdate, localVersion, remoteVersion, releaseNotes, updating, error }
 const incrementalMetricsMap = new Map(); // dbPath -> { rowCount, maxIdx, userStepsCount, lastUserStepIdx, items, validItems, totalIn, totalCache, totalOut, totalThink, totalResp }
 const MAX_METRICS_CACHE_SIZE = 30;
 
@@ -336,6 +337,7 @@ let activeConfig = {
     coldBootHealer: true,
     zoomShortcuts: true,
     cdpAutoRelaunch: true,
+    updateCheck: true,
     customCss: true,
     customJs: true
   },
@@ -535,6 +537,7 @@ function rebuildBundleIfNeeded() {
       coldBootHealer: true,
       zoomShortcuts: true,
       cdpAutoRelaunch: true,
+      updateCheck: true,
       customCss: true,
       customJs: true
     },
@@ -3002,6 +3005,8 @@ function attachTarget(target, endpoint) {
             await send('Runtime.addBinding', { name: '__agRequestHardReload' });
             await send('Runtime.addBinding', { name: '__agSetDarkPreset' });
             await send('Runtime.addBinding', { name: '__agSyncHostThemeMode' });
+            await send('Runtime.addBinding', { name: '__agTriggerSelfUpdate' });
+            await send('Runtime.addBinding', { name: '__agDismissUpdate' });
           }
         }
         if (ws.readyState !== WebSocket.OPEN || nonHostSettled) {
@@ -3011,6 +3016,9 @@ function attachTarget(target, endpoint) {
         await updateNewDocScript(true);
         const ok = await inject();
         await syncMetricsForSession(true);
+        if (target.type === 'page' && currentUpdateBannerState && currentUpdateBannerState.hasUpdate) {
+          pushUpdateStateToTarget(send, currentUpdateBannerState);
+        }
         initialAttachDone = true;
         clearTimeout(attachTimeout);
         finishAttach(ok);
@@ -3190,6 +3198,20 @@ function attachTarget(target, endpoint) {
             if (!SAFE_MODE) {
               persistDarkPresetToUserConfig(msg.params.payload);
             }
+            return;
+          }
+          if (msg.method === 'Runtime.bindingCalled' && msg.params?.name === '__agTriggerSelfUpdate') {
+            if (!hostConfirmed || target.type !== 'page' || SAFE_MODE) {
+              return;
+            }
+            void triggerSelfUpdateFromUi();
+            return;
+          }
+          if (msg.method === 'Runtime.bindingCalled' && msg.params?.name === '__agDismissUpdate') {
+            if (!hostConfirmed || target.type !== 'page' || SAFE_MODE) {
+              return;
+            }
+            dismissUpdateVersion(msg.params.payload);
             return;
           }
           if (
@@ -3856,6 +3878,330 @@ function trimPosixDaemonLogsIfNeeded() {
   }
 }
 
+// ============================================================================
+// 5.5 双通道自动更新提醒引擎（通道 1：窗内优雅提示卡；通道 2：失效/断连时 OS 原生弹窗）
+// ============================================================================
+const UPDATE_MIRRORS = [
+  'https://raw.githubusercontent.com/JackHua6/Antigravity/main',
+  'https://cdn.jsdelivr.net/gh/JackHua6/Antigravity@main'
+];
+const UPDATE_STATE_FILE = path.join(USER_DIR, '.update-state.json');
+const UPDATE_CHECK_INTERVAL_MS = 12 * 3600 * 1000;
+const UPDATE_RETRY_BACKOFF_MS = 30 * 60 * 1000;
+const NATIVE_PROMPT_COOLDOWN_MS = 24 * 3600 * 1000;
+let isCheckingRemoteUpdate = false;
+let isSelfUpdating = false;
+let isNativePromptOpen = false;
+let lastUpdateCheckAttemptMs = 0;
+
+function compareSemver(a, b) {
+  const pa = String(a || '0.0.0')
+    .replace(/^v/i, '')
+    .split(/[-+]/)[0]
+    .split('.')
+    .map((n) => parseInt(n, 10) || 0);
+  const pb = String(b || '0.0.0')
+    .replace(/^v/i, '')
+    .split(/[-+]/)[0]
+    .split('.')
+    .map((n) => parseInt(n, 10) || 0);
+  const len = Math.max(pa.length, pb.length, 3);
+  for (let i = 0; i < len; i++) {
+    const va = pa[i] || 0;
+    const vb = pb[i] || 0;
+    if (va > vb) return 1;
+    if (va < vb) return -1;
+  }
+  return 0;
+}
+
+function readLocalManifestVersion() {
+  const m = readJsonSafe(path.join(CORE_DIR, 'manifest.json'), {});
+  return String(m.version || '0.0.0');
+}
+
+function readUpdateState() {
+  return readJsonSafe(UPDATE_STATE_FILE, {});
+}
+
+function writeUpdateState(patch) {
+  try {
+    const cur = readUpdateState();
+    const next = Object.assign({}, cur, patch);
+    fs.mkdirSync(USER_DIR, { recursive: true });
+    fs.writeFileSync(UPDATE_STATE_FILE, JSON.stringify(next, null, 2) + '\n', 'utf8');
+    return next;
+  } catch {
+    return patch;
+  }
+}
+
+function pushUpdateStateToTarget(sendFn, statePayload) {
+  if (!sendFn || !statePayload) return;
+  try {
+    const expr = `if (typeof window.__ag_set_update_state === 'function') window.__ag_set_update_state(${JSON.stringify(statePayload)});`;
+    void sendFn('Runtime.evaluate', { expression: expr, silent: true });
+  } catch {}
+}
+
+function broadcastUpdateStateToPages(statePayload) {
+  currentUpdateBannerState = statePayload;
+  for (const [, entry] of attachedTargets.entries()) {
+    if (entry && entry.hostConfirmed && entry.type === 'page' && entry.send) {
+      pushUpdateStateToTarget(entry.send, statePayload);
+    }
+  }
+}
+
+async function fetchRemoteManifestQuick() {
+  for (const baseUrl of UPDATE_MIRRORS) {
+    const bust = baseUrl.includes('raw.githubusercontent.com') ? `?t=${Date.now()}` : '';
+    try {
+      const res = await fetch(`${baseUrl}/core/manifest.json${bust}`, {
+        signal: AbortSignal.timeout(5000),
+        headers: { 'User-Agent': 'jackhua-antigravity-theme-patch/5.6.0' }
+      });
+      if (!res.ok) continue;
+      const text = await res.text();
+      const manifest = JSON.parse(text.replace(/^\uFEFF/, ''));
+      if (manifest && manifest.version && manifest.files) {
+        return { manifest, baseUrl };
+      }
+    } catch {}
+  }
+  return null;
+}
+
+async function checkForRemoteUpdate(force = false) {
+  if (SAFE_MODE || RUN_ONCE || !activeConfig.enabled || activeConfig.modules?.updateCheck === false) return null;
+  if (isCheckingRemoteUpdate || isSelfUpdating) return currentUpdateBannerState;
+
+  const now = Date.now();
+  const saved = readUpdateState();
+  const localVersion = readLocalManifestVersion();
+
+  if (!force) {
+    const lastOkAt = Number(saved.lastCheckAt) || 0;
+    if (now - lastOkAt < UPDATE_CHECK_INTERVAL_MS) {
+      // 复用缓存结果，确保新打开的窗口也能看到未忽略的新版本提示
+      const cachedRemote = String(saved.lastRemoteVersion || '');
+      if (cachedRemote && compareSemver(cachedRemote, localVersion) > 0 && saved.dismissedVersion !== cachedRemote) {
+        const st = {
+          hasUpdate: true,
+          localVersion,
+          remoteVersion: cachedRemote,
+          releaseNotes: String(saved.lastReleaseNotes || ''),
+          updating: false,
+          error: ''
+        };
+        if (!currentUpdateBannerState || currentUpdateBannerState.remoteVersion !== cachedRemote) {
+          broadcastUpdateStateToPages(st);
+        }
+        return st;
+      }
+      return currentUpdateBannerState;
+    }
+    if (now - lastUpdateCheckAttemptMs < UPDATE_RETRY_BACKOFF_MS) {
+      return currentUpdateBannerState;
+    }
+  }
+
+  isCheckingRemoteUpdate = true;
+  lastUpdateCheckAttemptMs = now;
+  try {
+    const remote = await fetchRemoteManifestQuick();
+    if (!remote) return currentUpdateBannerState;
+    const remoteVersion = String(remote.manifest.version || '0.0.0');
+    const releaseNotes = String(remote.manifest.releaseNotes || '');
+    const updatedState = writeUpdateState({
+      lastCheckAt: Date.now(),
+      lastRemoteVersion: remoteVersion,
+      lastReleaseNotes: releaseNotes,
+      lastSource: remote.baseUrl
+    });
+    const hasUpdate = compareSemver(remoteVersion, localVersion) > 0;
+    if (hasUpdate && updatedState.dismissedVersion !== remoteVersion) {
+      const payload = {
+        hasUpdate: true,
+        localVersion,
+        remoteVersion,
+        releaseNotes,
+        updating: false,
+        error: ''
+      };
+      broadcastUpdateStateToPages(payload);
+      logDaemonEvent(`Update available: v${localVersion} -> v${remoteVersion} (${remote.baseUrl})`);
+      return payload;
+    }
+    if (currentUpdateBannerState && currentUpdateBannerState.hasUpdate) {
+      broadcastUpdateStateToPages({ hasUpdate: false, localVersion, remoteVersion });
+    }
+    return { hasUpdate: false, localVersion, remoteVersion };
+  } catch {
+    return currentUpdateBannerState;
+  } finally {
+    isCheckingRemoteUpdate = false;
+  }
+}
+
+function dismissUpdateVersion(ver) {
+  const v = String(ver || currentUpdateBannerState?.remoteVersion || '').trim();
+  if (v) {
+    writeUpdateState({ dismissedVersion: v });
+  }
+  broadcastUpdateStateToPages({ hasUpdate: false });
+}
+
+async function triggerSelfUpdateFromUi() {
+  if (isSelfUpdating || SAFE_MODE) return;
+  const installScript = path.join(ROOT_DIR, 'install.mjs');
+  if (!fs.existsSync(installScript)) return;
+  isSelfUpdating = true;
+  const baseState = currentUpdateBannerState || {
+    hasUpdate: true,
+    localVersion: readLocalManifestVersion(),
+    remoteVersion: '',
+    releaseNotes: ''
+  };
+  broadcastUpdateStateToPages(Object.assign({}, baseState, { updating: true, error: '' }));
+  logDaemonEvent(`User triggered one-click self-update from UI (${baseState.localVersion} -> ${baseState.remoteVersion})`);
+
+  execFile(
+    process.execPath,
+    [installScript, 'update', '--target-dir', ROOT_DIR],
+    { timeout: 120000, windowsHide: true },
+    (err, stdout, stderr) => {
+      isSelfUpdating = false;
+      if (err) {
+        const msg = String(stderr || stdout || err.message || '更新失败').trim().slice(0, 160);
+        logDaemonEvent(`Self-update failed: ${msg}`);
+        broadcastUpdateStateToPages(Object.assign({}, baseState, { updating: false, error: msg }));
+        return;
+      }
+      logDaemonEvent(`Self-update completed successfully.`);
+      broadcastUpdateStateToPages({ hasUpdate: false });
+    }
+  );
+}
+
+async function maybeShowNativeRepairOrUpdateDialog() {
+  if (
+    SAFE_MODE ||
+    RUN_ONCE ||
+    isNativePromptOpen ||
+    isSelfUpdating ||
+    isCdpRelaunching ||
+    !activeConfig.enabled ||
+    activeConfig.modules?.updateCheck === false
+  ) {
+    return;
+  }
+
+  const hostProcs = probeRunningHostProcesses(activeConfig.channel, activeConfig.endpoints);
+  if (hostProcs.length === 0) return;
+
+  // 仅针对已运行超过 20 秒且仍无 CDP 标记的客户端（避开 M2 12s/25s 自动冷启动接力窗口）
+  const unflagged = hostProcs.find((p) => {
+    if (p.hasCdpFlag) return false;
+    const ep = activeConfig.endpoints.find((e) => e.channel === p.channel) || activeConfig.endpoints[0];
+    if (ep && readPort(ep.portFile)) return false;
+    const minWaitSec = p.hasUpdatedFlag ? 28 : 20;
+    return p.elapsedSec >= minWaitSec;
+  });
+  if (!unflagged) return;
+
+  // 触发一次在线版本检查，看看仓库是否已发布针对新版的修复补丁
+  await checkForRemoteUpdate(false);
+  const localVersion = readLocalManifestVersion();
+  const saved = readUpdateState();
+  const remoteVersion = String(saved.lastRemoteVersion || '');
+  const releaseNotes = String(saved.lastReleaseNotes || '');
+  const hasRemoteUpdate = Boolean(remoteVersion && compareSemver(remoteVersion, localVersion) > 0);
+
+  const promptKey = hasRemoteUpdate ? `update:${remoteVersion}` : `cdp-missing:${localVersion}:${unflagged.pid}`;
+  const lastPromptAt = Number(saved.lastNativePromptAt) || 0;
+  if (saved.lastNativePromptKey === promptKey && Date.now() - lastPromptAt < NATIVE_PROMPT_COOLDOWN_MS) {
+    return;
+  }
+  // 若同为 cdp-missing，24 小时内无论 PID 变化最多弹 1 次，避免打扰用户
+  if (
+    !hasRemoteUpdate &&
+    String(saved.lastNativePromptKey || '').startsWith('cdp-missing:') &&
+    Date.now() - lastPromptAt < NATIVE_PROMPT_COOLDOWN_MS
+  ) {
+    return;
+  }
+
+  isNativePromptOpen = true;
+  writeUpdateState({ lastNativePromptKey: promptKey, lastNativePromptAt: Date.now() });
+
+  const title = hasRemoteUpdate ? 'Antigravity 汉化补丁更新提醒' : 'Antigravity 汉化修复提醒';
+  const body = hasRemoteUpdate
+    ? `检测到 Antigravity 已更新（当前汉化未生效），仓库已发布新版补丁 v${remoteVersion}（当前 v${localVersion}）。\n\n${releaseNotes ? `更新内容：${releaseNotes}\n\n` : ''}是否立即一键自动更新并重启 Antigravity 恢复中文？`
+    : `检测到 Antigravity 正在运行但汉化未生效（可能是客户端更新导致启动参数丢失）。\n\n是否立即一键修复快捷方式并重启 Antigravity 恢复中文？`;
+
+  const installScript = path.join(ROOT_DIR, 'install.mjs');
+  const runFixAfterConfirm = () => {
+    if (hasRemoteUpdate) {
+      const child = spawn(process.execPath, [installScript, 'update', '--relaunch', '--force', '--target-dir', ROOT_DIR], {
+        detached: true,
+        stdio: 'ignore',
+        windowsHide: true
+      });
+      child.unref();
+    } else {
+      spawnSync(process.execPath, [installScript, 'install', '--target-dir', ROOT_DIR], {
+        windowsHide: true,
+        timeout: 45000
+      });
+      const child = spawn(process.execPath, [installScript, 'relaunch', '--force', '--target-dir', ROOT_DIR], {
+        detached: true,
+        stdio: 'ignore',
+        windowsHide: true
+      });
+      child.unref();
+    }
+  };
+
+  if (process.platform === 'win32') {
+    const psEsc = (s) => String(s || '').replace(/'/g, "''");
+    const psScript = [
+      `Add-Type -AssemblyName System.Windows.Forms`,
+      `$res = [System.Windows.Forms.MessageBox]::Show('${psEsc(body)}', '${psEsc(title)}', [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Information, [System.Windows.Forms.MessageBoxDefaultButton]::Button1, [System.Windows.Forms.MessageBoxOptions]::DefaultDesktopOnly)`,
+      `Write-Output $res`
+    ].join('\n');
+    const encoded = Buffer.from(psScript, 'utf16le').toString('base64');
+    execFile(
+      'powershell',
+      ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-EncodedCommand', encoded],
+      { windowsHide: true, timeout: 120000 },
+      (err, stdout) => {
+        isNativePromptOpen = false;
+        if (!err && String(stdout || '').trim() === 'Yes') {
+          logDaemonEvent(`User confirmed native dialog (${promptKey}); executing one-click update/repair.`);
+          runFixAfterConfirm();
+        }
+      }
+    );
+    return;
+  }
+
+  if (process.platform === 'darwin') {
+    const asEsc = (s) => String(s || '').replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+    const osa = `button returned of (display dialog "${asEsc(body)}" with title "${asEsc(title)}" buttons {"暂不", "立即修复"} default button "立即修复")`;
+    execFile('osascript', ['-e', osa], { timeout: 120000 }, (err, stdout) => {
+      isNativePromptOpen = false;
+      if (!err && String(stdout || '').trim() === '立即修复') {
+        logDaemonEvent(`User confirmed macOS native dialog (${promptKey}); executing one-click update/repair.`);
+        runFixAfterConfirm();
+      }
+    });
+    return;
+  }
+
+  isNativePromptOpen = false;
+}
+
 async function sync() {
   checkPidFileOwnership();
   if (isSyncing) return;
@@ -3963,6 +4309,12 @@ async function sync() {
     // 2.33.0+ 冷启动无标记自愈（M2）：仅在 0 活跃 CDP 目标时按严苛冷启动时间窗探测并自动接力重启
     if (pendingPages.length === 0 && attachedTargets.size === 0) {
       maybeAutoRelaunchColdStartWithoutCdp();
+      if (syncTickCount % 4 === 0) {
+        void maybeShowNativeRepairOrUpdateDialog();
+      }
+    } else if (syncTickCount === 6 || syncTickCount % 240 === 0) {
+      // 在线态：启动约 15 秒后首次静默检查远端新版本，随后每 10 分钟检查本地 12h 缓存状态
+      void checkForRemoteUpdate(false);
     }
 
     // 清理已关闭的目标连接

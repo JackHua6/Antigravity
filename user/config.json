@@ -12,6 +12,7 @@
     "coldBootHealer": true,
     "zoomShortcuts": true,
     "cdpAutoRelaunch": true,
+    "updateCheck": true,
     "customCss": true,
     "customJs": true
   },

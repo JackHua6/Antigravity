@@ -1,9 +1,9 @@
 ---
 name: jackhua-antigravity-theme-patch
-description: 华哥同步船板 v5.5.1 并深度增强的 Antigravity 2.0 主题、字体与汉化补丁（适配 Antigravity 2.33.0+ macOS / Windows / Linux 单图标 M1+M2 CDP 启动接力 + Windows 白底输入框标准工字光标防隐形 + UI 西文 Google Sans Flex 可变字体引擎 × 中文更纱黑体字重桥接 + 昼夜双模式四套预设与外观面板 📖 书卷切换钮 + 1,919 条深度汉化词典 + 分屏/支线提问(/btw)/子Agent侧栏独立实时指标胶囊与动态上下文上限）。当用户提到“重新汉化”、“汉化失效”、“升级后汉化”、“版本更新重新汉化”、“修复汉化”、“重装汉化”、“安装汉化”、“汉化”、“安装 Antigravity 主题”、“定制 Antigravity 界面样式或汉化词条”时触发。激活后直接在项目目录执行 node install.mjs install 并 verify 验收，秒级恢复全界面汉化与主题。
+description: 华哥同步船板 v5.5.1 并深度增强的 Antigravity 2.0 主题、字体与汉化补丁（v5.6.0 · 适配 Antigravity 2.33.0+ 单图标 M1+M2 CDP 启动接力 + 双通道自动更新提醒与一键安全升级 + Windows 白底输入框标准工字光标防隐形 + UI 西文 Google Sans Flex 可变字体引擎 × 中文更纱黑体字重桥接 + 昼夜双模式四套预设与外观面板 📖 书卷切换钮 + 1,919 条深度汉化词典 + 分屏/支线提问(/btw)/子Agent侧栏独立实时指标胶囊与动态上下文上限）。当用户提到“重新汉化”、“汉化失效”、“升级后汉化”、“版本更新重新汉化”、“修复汉化”、“重装汉化”、“安装汉化”、“汉化”、“检查更新”、“更新汉化”、“安装 Antigravity 主题”、“定制 Antigravity 界面样式或汉化词条”时触发。激活后直接在项目目录执行 node install.mjs install 并 verify 验收，秒级恢复全界面汉化与主题。
 ---
 
-# JackHua's Antigravity 主题、字体与汉化增强版（v5.5.1 · 同步船板最新版 & AI Agent 部署契约）
+# JackHua's Antigravity 主题、字体与汉化增强版（v5.6.0 · 双通道自动更新提醒 & AI Agent 部署契约）
 
 > **核心摘要（致执行端 AI Agent）**：
 > - **项目基底**：同步上游 [Anarcadia/chuanban-antigravity-theme-patch](https://github.com/Anarcadia/chuanban-antigravity-theme-patch) `v5.5.1` 全部内核，并叠加 JackHua 专属增强（Windows DWM 白底输入框标准 1px 工字光标防隐形、`1,919` 条深度汉化词典、一键 `重新汉化.bat` 及旧版 `LaunchAntigravity.vbs` 快捷方式自动迁移至原生 `--remote-debugging-port=0`）。

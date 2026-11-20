@@ -1,6 +1,7 @@
 {
-  "name": "chuanban-antigravity-theme-patch",
-  "version": "5.5.1",
+  "name": "jackhua-antigravity-theme-patch",
+  "version": "5.6.0",
+  "releaseNotes": "新增双通道自动更新提醒（窗内优雅提示卡 + 失效时系统原生弹窗）与一键安全自动升级",
   "minNodeVersion": "22.0.0",
   "fullMetricsNodeVersion": "22.13.0",
   "distribution": {
@@ -10,16 +11,16 @@
   },
   "files": {
     "daemon.mjs": {
-      "sha256": "e4b6cab86c7143d6c5c74a91a469d7fca8fe88980ea2e954146db19dc953d43a",
-      "bytes": 146385
+      "sha256": "67e739fc98caa5e4eaee64bdd52c3310a66d5bcd17fa5b2bbbe5d9679784d9df",
+      "bytes": 160202
     },
     "runtime.js": {
-      "sha256": "42f8a502b3804a5b8d2b24e957773b78cd0c9b9ea2312461848b46948c7af23b",
-      "bytes": 179869
+      "sha256": "8d4255cd11319c8dd946cba00ab6c13862cd46547ef547b3a1d98fde23a15597",
+      "bytes": 183421
     },
     "theme.css": {
-      "sha256": "f5cb19c6cdc25d6bae513f2d79633fd6a02f3a58c2d2927d492dfe1624e1b4c2",
-      "bytes": 81762
+      "sha256": "9919bfb4f7348966d2477e0015a4a98a7cc399f53be69fdd79532ef27bc9839e",
+      "bytes": 85751
     },
     "i18n.json": {
       "sha256": "70a3b7a59b32b471e772f1836d1ef1dd108e5b9aa4597de33e75960bd4af5635",
